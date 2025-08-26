@@ -1,0 +1,21 @@
+node_modules/
+.DS_Store
+.env
+.vscode/
+*.log
+**/Thumbs.db
+.cache/
+coverage/
+
+# Don't push local settings
+.local.settings.json
+
+# Ignore generated files
+dist/
+build/
+
+# Ignore system files
+desktop.ini
+
+# Keep package-lock out
+package-lock.json

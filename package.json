@@ -1,0 +1,14 @@
+{
+    "name": "oil-and-gas-newsletter",
+    "version": "0.1.0",
+    "description": "Google Apps Script project for aggregating oil & gas news feeds",
+    "scripts": {
+        "login": "clasp login",
+        "push": "clasp push",
+        "pull": "clasp pull",
+        "create-sheets": "clasp create --title \"Oil & Gas Newsletter\" --rootDir src --type sheets"
+    },
+    "devDependencies": {
+        "@google/clasp": "^2.5.0"
+    }
+}
