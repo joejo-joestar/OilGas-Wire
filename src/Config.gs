@@ -1,3 +1,9 @@
+var SHEET_ID = null;
+/**
+ * Configuration for categories, their associated RSS/Atom feeds, and sheet headers.
+ * Each category will be a separate tab in the configured Google Sheet.
+ * Modify this configuration to add/remove categories or change feed URLs.
+ */
 var CONFIG = [
     {
         category: 'Unified News',
@@ -138,6 +144,10 @@ var REGION_CANONICALS = {
     'china': 'China', 'peoples republic of china': 'China',
     'qatar': 'Qatar',
     'saudi arabia': 'Saudi Arabia', 'ksa': 'Saudi Arabia',
-    'ukraine': 'Ukraine'
+    'ukraine': 'Ukraine',
+    'iran': 'Iran', 'islamic republic of iran': 'Iran',
+    'iraq': 'Iraq', 'republic of iraq': 'Iraq',
+    'australia': 'Australia', 'new zealand': 'New Zealand',
+    'africa': 'Africa',
 };
 
