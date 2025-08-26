@@ -1,5 +1,9 @@
 <h1 align="center">Automated Newsletter & RSS Feed</h1>
 
+<p align = "center">
+  <img src="assets/pixpagercar.png" alt="Feed Car" title="Feed Car" width="128">
+</p>
+
 Aggregates RSS/Atom feeds, filters and enriches items (company, region, commodity, industry, price hints), and writes results into separate tabs in a Google Sheet using Google Apps Script.
 
 ## Repo layout
