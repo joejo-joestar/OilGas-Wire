@@ -2,7 +2,7 @@ var CONFIG = [
     {
         category: 'Unified News',
         sheetName: 'Unified News',
-        headers: ['Date', 'Headline', 'Company', 'Region', 'Snippet', 'Source', 'Link'],
+        headers: ['Date', 'Headline', 'Company', 'Price Info.', 'Region', 'Snippet', 'Source', 'Link'],
         feeds: [
             'https://oilprice.com/rss/main',
             'https://www.saudigulfprojects.com/feed/',
@@ -29,8 +29,8 @@ var CONFIG = [
         ]
     },
     {
-        category: 'Oil and Raw Materials Prices',
-        sheetName: 'Prices',
+        category: 'Oil, Gas, and Raw Materials',
+        sheetName: 'Oil, Gas, and Raw Materials',
         headers: ['Date', 'Headline', 'Commodity', 'Price Info.', 'Region', 'Snippet', 'Source', 'Link'],
         feeds: [
             'https://oilprice.com/rss/main',
@@ -74,8 +74,8 @@ var CONFIG = [
 
     },
     {
-        category: 'Mergers and Acquisitions / Joint Ventures',
-        sheetName: 'Mergers & JVs',
+        category: 'Mergers, Acquisitions, and Joint Ventures',
+        sheetName: 'Mergers, Acquisitions, and Joint Ventures',
         headers: ['Date', 'Headline', 'Companies', 'Region', 'Article', 'Source', 'Link'],
         feeds: [
             'https://www.ft.com/?format=rss',
