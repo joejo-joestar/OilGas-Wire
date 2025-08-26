@@ -250,22 +250,16 @@ function analyzeItem(item) {
         res.region = canonicalizeRegion(regGuess) || regGuess;
     }
 
-    // Commodity and price info
-    if (lc.indexOf('brent') !== -1) res.commodity = 'Brent';
-    else if (lc.indexOf('wti') !== -1) res.commodity = 'WTI';
+    // Commodity and price info: derive commodity only from the configured COMMODITIES list
+    try {
+        res.commodity = identifyCommodity(text) || '';
+    } catch (e) {
+        res.commodity = '';
+    }
     // price info: look for patterns like 'rose 2%' or '$70/bbl' or 'down 1.5%'
     var priceRegex = /\$\s?[0-9]+(?:\.[0-9]+)?\s?\/?bbl|\$\s?[0-9,.]+|\b(up|down|rose|fell|declined)\s+[0-9\.]+%/i;
     var p = text.match(priceRegex);
     if (p) res.priceInfo = p[0];
-
-    // If commodity not detected above, try to identify from CONFIG.COMMODITIES list
-    if (!res.commodity) {
-        try {
-            res.commodity = identifyCommodity(text) || '';
-        } catch (e) {
-            // ignore and leave empty
-        }
-    }
 
     return res;
 }
@@ -298,6 +292,12 @@ function inferFieldFromItem(col, item) {
 function identifyCommodity(text) {
     if (!text) return 'Miscellaneous';
     var lc = text.toString().toLowerCase();
+    // alias map: map specific tokens to canonical COMMODITIES
+    var aliasMap = {
+        'brent': 'Oil',
+        'wti': 'Oil',
+        'west texas intermediate': 'Oil'
+    };
     try {
         if (typeof COMMODITIES !== 'undefined' && COMMODITIES && COMMODITIES.length) {
             for (var i = 0; i < COMMODITIES.length; i++) {
@@ -306,9 +306,17 @@ function identifyCommodity(text) {
                 var token = c.toString().toLowerCase();
                 // Exact word-boundary match first
                 var re = new RegExp('\\b' + escapeRegExp(token) + '\\b');
-                if (re.test(lc)) return c;
+                if (re.test(lc)) {
+                    // if the matched token is an alias that should map to another canonical commodity,
+                    // prefer alias mapping (e.g., 'brent' -> 'Oil')
+                    if (aliasMap[token]) return aliasMap[token];
+                    return c;
+                }
                 // Fallback: compact match (useful for short tokens like LNG)
-                if (lc.indexOf(token.replace(/\s+/g, '')) !== -1) return c;
+                if (lc.indexOf(token.replace(/\s+/g, '')) !== -1) {
+                    if (aliasMap[token]) return aliasMap[token];
+                    return c;
+                }
             }
         }
     } catch (e) {
