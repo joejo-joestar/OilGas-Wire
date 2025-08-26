@@ -424,6 +424,15 @@ function analyzeItem(item) {
     var p = text.match(priceRegex);
     if (p) res.priceInfo = p[0];
 
+    // If commodity not detected above, try to identify from CONFIG.COMMODITIES list
+    if (!res.commodity) {
+        try {
+            res.commodity = identifyCommodity(text) || '';
+        } catch (e) {
+            // ignore and leave empty
+        }
+    }
+
     return res;
 }
 
@@ -448,6 +457,35 @@ function inferFieldFromItem(col, item) {
         return '';
     }
     return '';
+}
+
+// Identify commodity from free text using the COMMODITIES list in Config.gs.
+// Returns the first matching commodity (case-insensitive) or 'Miscellaneous' when none found.
+function identifyCommodity(text) {
+    if (!text) return 'Miscellaneous';
+    var lc = text.toString().toLowerCase();
+    try {
+        if (typeof COMMODITIES !== 'undefined' && COMMODITIES && COMMODITIES.length) {
+            for (var i = 0; i < COMMODITIES.length; i++) {
+                var c = COMMODITIES[i];
+                if (!c) continue;
+                var token = c.toString().toLowerCase();
+                // Exact word-boundary match first
+                var re = new RegExp('\\b' + escapeRegExp(token) + '\\b');
+                if (re.test(lc)) return c;
+                // Fallback: compact match (useful for short tokens like LNG)
+                if (lc.indexOf(token.replace(/\s+/g, '')) !== -1) return c;
+            }
+        }
+    } catch (e) {
+        // ignore errors and fall back
+    }
+    // Fallback heuristics (similar to old/raw mats.gs)
+    var heur = ['oil', 'gas', 'lng', 'steel', 'pipe', 'chemical', 'valve', 'flange', 'diesel'];
+    for (var j = 0; j < heur.length; j++) {
+        if (lc.indexOf(heur[j]) !== -1) return heur[j].charAt(0).toUpperCase() + heur[j].slice(1);
+    }
+    return 'Miscellaneous';
 }
 
 // Check whether an item matches any of the category queries (case-insensitive substring)
@@ -720,24 +758,4 @@ function getItemYear(item) {
     var m = dateStr.match(/(20\d{2})/);
     if (m && m[1]) return parseInt(m[1], 10);
     return null;
-}
-
-// Diagnostic: fetch each configured feed and log response metadata + sample content
-function fetchFeedDiagnostics() {
-    CONFIG.forEach(function (cat) {
-        cat.feeds.forEach(function (feedUrl) {
-            try {
-                var resp = UrlFetchApp.fetch(feedUrl, FETCH_OPTIONS);
-                var code = resp.getResponseCode();
-                var ct = resp.getHeaders()['Content-Type'] || resp.getHeaders()['content-type'] || '';
-                var text = resp.getContentText();
-                var snippet = text ? text.substring(0, 4096) : '';
-                var looks = (text || '').toLowerCase().indexOf('<rss') !== -1 || (text || '').toLowerCase().indexOf('<feed') !== -1;
-                Logger.log('DIAG %s -> code:%s content-type:%s looksLikeFeed:%s url:%s', cat.sheetName, code, ct, looks, feedUrl);
-                if (!looks) Logger.log('DIAG SNIPPET %s: %s', feedUrl, snippet.replace(/\n/g, ' ').substring(0, 800));
-            } catch (e) {
-                Logger.log('DIAG ERROR fetching %s : %s', feedUrl, e.message);
-            }
-        });
-    });
 }
