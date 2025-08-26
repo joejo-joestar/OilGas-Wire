@@ -94,7 +94,6 @@ var CONFIG = [
             "oil gas board member resignation",
             "hydrogen startup leadership news"
         ],
-        industries: ['Oil & Gas', 'Hydrogen', 'Water Treatment']
 
     },
     {
@@ -142,6 +141,8 @@ var KNOWN_REGIONS = [
 ];
 
 var COMMODITIES = ["Oil", "Gas", "LNG", "Steel", "Pipe", "Chemical", "Valve", "Flange", "Diesel"];
+
+var INDUSTRIES = ['Oil & Gas', 'Hydrogen', 'Water Treatment'];
 
 
 // Fuzzy matching threshold (0..1). Higher is stricter.
@@ -338,8 +339,11 @@ function buildRowForCategory(item, cat) {
             row.push(item.pubDate ? new Date(item.pubDate) : '');
         } else if (col.indexOf('headline') !== -1 || col.indexOf('title') !== -1) {
             row.push(item.title || '');
-        } else if (col.indexOf('article') !== -1 || col === 'article') {
-            row.push(item.summary || item.content || '');
+        } else if (col.indexOf('article') !== -1 || col === 'article' || col.indexOf('snippet') !== -1) {
+            // prefer summary, fallback to content; strip simple HTML and truncate for readability
+            var raw = item.summary || item.content || '';
+            var clean = (raw || '').toString().replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim();
+            row.push(truncateText(clean, ARTICLE_SNIPPET_MAX));
         } else if (col === 'link') {
             row.push(item.link || '');
         } else if (col === 'source') {
@@ -554,7 +558,6 @@ function parseFeed(xmlText, feedUrl) {
             }
         }
 
-        // Clean up known problematic sequences: remove HTML <meta> and unclosed tags that break XML parser
         // (only minimal sanitization)
         xmlText = xmlText.replace(/\uFFFE|\uFEFF/g, '');
 
@@ -577,7 +580,7 @@ function parseFeed(xmlText, feedUrl) {
                 }
                 // Prefer <source> child if present (Google News provides this), otherwise use channel title
                 var itemSource = it.getChildText('source', ns) || it.getChildText('source') || chTitle;
-                items.push({
+                var newItem = {
                     title: it.getChildText('title') || '',
                     link: link || '',
                     pubDate: it.getChildText('pubDate') || '',
@@ -585,11 +588,22 @@ function parseFeed(xmlText, feedUrl) {
                     content: content,
                     source: itemSource,
                     feedUrl: feedUrl
-                });
+                };
+                // normalize HTML-in-title or site-specific HTML snippets
+                newItem = normalizeItemHtmlFields(newItem) || newItem;
+                items.push(newItem);
                 // if this is a Google News RSS item, titles are "{headline} - {source}"; extract source
                 if (feedUrl && feedUrl.indexOf('news.google.com') !== -1) {
                     var last = items[items.length - 1];
                     parseGoogleTitle(last);
+                    // if parseGoogleTitle left HTML fragments, normalize again
+                    last = normalizeItemHtmlFields(last) || last;
+                    // attempt to resolve Google News redirect link to publisher URL
+                    try { last.link = resolveGoogleNewsLink(last.link || last.feedUrl); } catch (e) { }
+                    // If there's no snippet/summary, duplicate the cleaned headline for readability
+                    if ((!last.summary || !last.summary.toString().trim()) && last.title) {
+                        last.summary = truncateText(humanizeHeadline(last.title), ARTICLE_SNIPPET_MAX);
+                    }
                 }
             });
         } else if (name === 'feed') {
@@ -607,7 +621,7 @@ function parseFeed(xmlText, feedUrl) {
                 var content = ent.getChildText('content', ns) || ent.getChildText('summary', ns) || '';
                 // Prefer <source> element within entry if present
                 var entrySource = ent.getChildText('source', ns) || ent.getChildText('source') || feedTitle;
-                items.push({
+                var newEnt = {
                     title: ent.getChildText('title', ns) || '',
                     link: link || ent.getChildText('link', ns) || '',
                     pubDate: ent.getChildText('updated', ns) || ent.getChildText('published', ns) || '',
@@ -615,10 +629,17 @@ function parseFeed(xmlText, feedUrl) {
                     content: content,
                     source: entrySource,
                     feedUrl: feedUrl
-                });
+                };
+                newEnt = normalizeItemHtmlFields(newEnt) || newEnt;
+                items.push(newEnt);
                 if (feedUrl && feedUrl.indexOf('news.google.com') !== -1) {
                     var last2 = items[items.length - 1];
                     parseGoogleTitle(last2);
+                    last2 = normalizeItemHtmlFields(last2) || last2;
+                    try { last2.link = resolveGoogleNewsLink(last2.link || last2.feedUrl); } catch (e) { }
+                    if ((!last2.summary || !last2.summary.toString().trim()) && last2.title) {
+                        last2.summary = truncateText(humanizeHeadline(last2.title), ARTICLE_SNIPPET_MAX);
+                    }
                 }
             });
         } else {
@@ -631,51 +652,6 @@ function parseFeed(xmlText, feedUrl) {
     return items;
 }
 
-// If Google News RSS provides titles as "{headline} - {source}", split them.
-function parseGoogleTitle(item) {
-    if (!item || !item.title) return;
-    var t = item.title.toString();
-    // Try to split by the last dash (handles '-', '–', '—') so headlines that contain dashes
-    // are preserved while the final suffix (the publisher) is extracted.
-    var m = t.match(/^(.*)\s[-–—]\s([^\n]+)$/);
-    if (m && m.length >= 3) {
-        var headline = m[1].trim();
-        var src = m[2].trim();
-        item.title = headline;
-        // Only set source if not already provided or if it appears to be a Google channel placeholder
-        var existing = (item.source || '').toString().toLowerCase();
-        var isGooglePlaceholder = existing.indexOf('google news') !== -1 || existing.indexOf('top stories') !== -1 || existing.indexOf('news.google.com') !== -1 || existing === '';
-        if (isGooglePlaceholder) item.source = src;
-        return;
-    }
-
-    // Fallback: simple split on ' - ' if the regex didn't match
-    var parts = t.split(' - ');
-    if (parts.length >= 2) {
-        var src2 = parts[parts.length - 1].trim();
-        var headline2 = parts.slice(0, parts.length - 1).join(' - ').trim();
-        item.title = headline2;
-        var existing2 = (item.source || '').toString().toLowerCase();
-        var isGooglePlaceholder2 = existing2.indexOf('google news') !== -1 || existing2.indexOf('top stories') !== -1 || existing2.indexOf('news.google.com') !== -1 || existing2 === '';
-        if (isGooglePlaceholder2) item.source = src2;
-    }
-}
-
-function getExistingLinks(sheet, headerCount) {
-    var res = {};
-    var lastRow = sheet.getLastRow();
-    if (lastRow < 2) return res;
-    var data = sheet.getRange(2, headerCount, lastRow - 1, 1).getValues();
-    // assume link is the last column; headerCount is number of columns
-    // We used getRange(2, headerCount, ... ,1) to read the last column
-    for (var i = 0; i < data.length; i++) {
-        var v = data[i][0];
-        if (v) res[v] = true;
-    }
-    return res;
-}
-
-// Return both existing links and normalized titles for deduplication.
 function getExistingKeys(sheet, headers) {
     var res = { links: {}, titles: {} };
     var lastRow = sheet.getLastRow();
@@ -699,13 +675,36 @@ function normalizeTitle(t) {
     return (t || '').toString().trim().toLowerCase().replace(/\s+/g, ' ').replace(/["'’`\-–—:;,.()]/g, '');
 }
 
-// Small helper used when testing from the Apps Script editor
-function testRun() {
-    fetchAndStoreAll();
+// Sort the sheet by the Date column (newest first). Expects headers array so we can
+// determine which column contains the date. If no Date column is present, no-op.
+function sortSheetByDate(sheet, headers) {
+    if (!sheet || !headers || headers.length === 0) return;
+    // find index of the first header that contains 'date' (case-insensitive)
+    var dateCol = -1;
+    for (var i = 0; i < headers.length; i++) {
+        if ((headers[i] || '').toString().toLowerCase().indexOf('date') !== -1) { dateCol = i + 1; break; }
+    }
+    if (dateCol === -1) return; // nothing to sort by
+
+    var lastRow = sheet.getLastRow();
+    var lastCol = Math.max(sheet.getLastColumn(), headers.length);
+    // nothing to sort if only header or empty
+    if (lastRow <= 1) return;
+
+    try {
+        // Range.sort expects 1-based column index relative to the sheet
+        // Sort descending (newest first)
+        sheet.getRange(2, 1, lastRow - 1, lastCol).sort({ column: dateCol, ascending: false });
+    } catch (e) {
+        // As a fallback, try the sheet-level sort method
+        try {
+            sheet.sort(dateCol, false);
+        } catch (e2) {
+            throw new Error('Unable to sort sheet by date: ' + e2.message);
+        }
+    }
 }
 
-// Try to extract a year integer from item.pubDate / item.pubDate-like strings.
-// Returns numeric year (e.g. 2024) or null if unparsable.
 function getItemYear(item) {
     if (!item) return null;
     var dateStr = item.pubDate || item.pubdate || item.updated || item.published || '';
