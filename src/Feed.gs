@@ -5,11 +5,7 @@
  * separate tabs in a Google Sheet. Configure categories below.
  */
 
-// SHEET_ID is stored in the Apps Script Project Properties (safer than hard-coding).
-// Set it in the Apps Script editor: File → Project properties → Script properties → Add SHEET_ID
-// You can also set it programmatically using setSheetId(value).
-
-var SHEET_ID = null; // not used directly; helper getSheetId() reads from PropertiesService
+var SHEET_ID = null;
 
 function getSheetId() {
     var id = PropertiesService.getScriptProperties().getProperty('SHEET_ID');
@@ -23,130 +19,6 @@ function setSheetId(id) {
     if (!id) throw new Error('setSheetId requires a non-empty id');
     PropertiesService.getScriptProperties().setProperty('SHEET_ID', id);
 }
-
-var CONFIG = [
-    {
-        category: 'Unified News',
-        sheetName: 'Unified News',
-        headers: ['Date', 'Headline', 'Industry', 'Company / Individual', 'Region', 'Article', 'Source', 'Link'],
-        feeds: [
-            'https://oilprice.com/rss/main',
-            'https://www.saudigulfprojects.com/feed/',
-            'https://www.offshore-technology.com/feed/',
-            'https://www.rigzone.com/news/rss/rigzone_original.aspx',
-            'https://news.google.com/rss/search?q=oil+and+gas&hl=en-US&gl=US&ceid=US:en'
-        ],
-        googleNewsQueries: [
-            "oil and gas contract awarded",
-            "oil and gas downstream contract awarded",
-            "oil and gas upstream contract awarded",
-            "oil and gas midstream contract awarded",
-            "oil and gas flng",
-            "oil and gas drilling",
-            "oil and gas production",
-            "oil and gas refinery",
-            "oil and gas water and waste water treatment",
-            "oil and gas water and waste watersolutions",
-            "oil and gas Chemicals",
-            "oil and gas Liquid mud plant",
-            "oil and gas vessel",
-            "opec oil decision"
-        ]
-    },
-    {
-        category: 'Oil and Raw Materials Prices',
-        sheetName: 'Prices',
-        headers: ['Date', 'Headline', 'Commodity', 'Price Info', 'Region', 'Article', 'Source', 'Link'],
-        feeds: [
-            'https://oilprice.com/rss/main',
-            'https://www.investing.com/rss/news_25.rss',
-        ],
-        googleNewsQueries: [
-            "crude oil price",
-            "brent oil price",
-            "wti oil price",
-            "natural gas price",
-            "lng price",
-            "steel pipe price",
-            "carbon steel price",
-            "seamless pipe price",
-            "drill pipe price",
-            "diesel fuel price",
-            "oil and gas chemical price"
-        ]
-    },
-    {
-        category: 'Leadership Changes',
-        sheetName: 'Leadership Changes',
-        headers: ['Date', 'Headline', 'Industry', 'Company / Individual', 'Region', 'Article', 'Source', 'Link'],
-        feeds: [
-            'https://www.rigzone.com/news/rss/rigzone_original.aspx',
-            'https://www.offshore-technology.com/feed/'
-        ],
-        googleNewsQueries: [
-            "ceo appointed oil and gas",
-            "new executive hire oil and gas",
-            "leadership change energy sector",
-            "hydrogen industry leadership transition",
-            "water treatment company ceo change",
-            "hydrogen fuel executive appointment",
-            "water sector board reshuffle",
-            "oil gas board member resignation",
-            "hydrogen startup leadership news"
-        ],
-
-    },
-    {
-        category: 'Mergers and Acquisitions / Joint Ventures',
-        sheetName: 'Mergers & JVs',
-        headers: ['Date', 'Headline', 'Companies', 'Deal Type', 'Deal Value', 'Region', 'Article', 'Source', 'Link'],
-        feeds: [
-            'https://www.reuters.com/business/energy/rss',
-            'https://www.ft.com/?format=rss',
-        ],
-        googleNewsQueries: ['merger', 'acquisition', 'acquires', 'joint venture', 'JV', 'buyout'],
-    }
-];
-
-var FETCH_OPTIONS = {
-    muteHttpExceptions: true,
-    followRedirects: true,
-    headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0 Safari/537.36'
-    }
-};
-
-// Only accept items published in this year or later. Assumption: user wants items from
-// 2024 onwards (inclusive). If you want a different cutoff, change MIN_YEAR.
-var MIN_YEAR = 2025;
-
-// Known oil & gas companies and regions to help fuzzy matching
-var KNOWN_COMPANIES = [
-    // National oil companies & majors
-    'Saudi Aramco', 'Aramco', 'ADNOC', 'Abu Dhabi National Oil Company', 'QatarEnergy', 'Qatar Petroleum', 'Kuwait Oil Company', 'KOC', 'ENOC',
-    'BP', 'Royal Dutch Shell', 'Shell', 'ExxonMobil', 'Chevron', 'TotalEnergies', 'Total', 'Equinor', 'Petronas', 'ConocoPhillips', 'Eni', 'OMV', 'Pemex',
-    'Sinopec', 'CNPC', 'CNOOC', 'PetroChina', 'Lukoil', 'Rosneft', 'Gazprom', 'Repsol', 'Pertamina', 'PTT', 'YPF',
-    // Oilfield services & contractors
-    'Halliburton', 'Schlumberger', 'Baker Hughes', 'Weatherford', 'Technip', 'TechnipFMC', 'Saipem', 'Petrofac', 'Technomak', 'Subsea7', 'McDermott', 'KBR', 'Worley', 'Jacobs', 'Fluor', 'Bechtel', 'Aker Solutions',
-    // Energy / LNG / midstream
-    'Sapura Energy', 'Golar', 'Mitsui', 'JGC', 'Chiyoda', 'KBR', 'Wood', 'McDermott International'
-];
-
-var KNOWN_REGIONS = [
-    'UAE', 'United Arab Emirates', 'Abu Dhabi', 'Dubai', 'Sharjah', 'Saudi Arabia', 'KSA', 'Riyadh', 'Jeddah', 'Qatar', 'Doha', 'Kuwait', 'Oman', 'Bahrain', 'Iraq', 'Iran',
-    'Gulf', 'GCC', 'Middle East', 'North Sea', 'Norway', 'UK', 'Scotland', 'West Africa', 'Nigeria', 'Angola', 'Gabon', 'East Africa', 'Mozambique',
-    'Asia', 'Southeast Asia', 'Indonesia', 'Malaysia', 'Brunei', 'Vietnam', 'China', 'India', 'Pakistan',
-    'USA', 'United States', 'Canada', 'Mexico', 'Latin America', 'Brazil', 'Argentina', 'Chile', 'Peru', 'Venezuela',
-    'Europe', 'Mediterranean', 'Caspian', 'Kazakhstan', 'Azerbaijan', 'Turkmenistan', 'Russia', 'Siberia', 'Australia', 'New Zealand'
-];
-
-var COMMODITIES = ["Oil", "Gas", "LNG", "Steel", "Pipe", "Chemical", "Valve", "Flange", "Diesel"];
-
-var INDUSTRIES = ['Oil & Gas', 'Hydrogen', 'Water Treatment'];
-
-
-// Fuzzy matching threshold (0..1). Higher is stricter.
-var FUZZY_THRESHOLD = 0.80;
 
 // Normalize to alpha-numeric lower string (no spaces) for compact fuzzy compares
 function normalizeForFuzzy(s) {
@@ -189,6 +61,99 @@ function escapeRegExp(s) {
     return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
+// Clean simple HTML fragments and common HTML entities from item text fields.
+// Returns a new item object with cleaned title/summary/content/source (if present).
+function normalizeItemHtmlFields(item) {
+    if (!item || typeof item !== 'object') return item;
+
+    function decodeEntities(str) {
+        if (!str) return '';
+        return str.toString()
+            .replace(/&nbsp;|&#160;/g, ' ')
+            .replace(/&amp;/g, '&')
+            .replace(/&lt;/g, '<')
+            .replace(/&gt;/g, '>')
+            .replace(/&quot;|&#34;/g, '"')
+            .replace(/&#39;|&apos;/g, "'")
+            .replace(/&rsquo;|&lsquo;/g, "'")
+            .replace(/&ldquo;|&rdquo;/g, '"');
+    }
+
+    function stripHtml(s) {
+        if (s === null || s === undefined) return '';
+        var t = decodeEntities(s);
+        // remove tags
+        t = t.replace(/<[^>]+>/g, ' ');
+        // collapse whitespace and trim
+        t = t.replace(/\s+/g, ' ').trim();
+        return t;
+    }
+
+    var out = {};
+    out.title = stripHtml(item.title || '');
+    out.summary = stripHtml(item.summary || item.content || '');
+    out.content = stripHtml(item.content || item.summary || '');
+    out.source = stripHtml(item.source || '');
+    out.link = item.link || '';
+    out.pubDate = item.pubDate || item.published || item.updated || '';
+    out.feedUrl = item.feedUrl || '';
+    return out;
+}
+
+// Truncate text to a maximum length, appending ellipsis when truncated.
+function truncateText(s, maxLen) {
+    if (!s) return '';
+    maxLen = maxLen || ARTICLE_SNIPPET_MAX;
+    var str = s.toString();
+    if (str.length <= maxLen) return str;
+    return str.substring(0, maxLen - 1).trim() + '\u2026';
+}
+
+// Convert compact headlines into a human-friendly snippet if needed
+function humanizeHeadline(h) {
+    if (!h) return '';
+    return h.replace(/\s+/g, ' ').trim();
+}
+
+// Try to resolve Google News redirect URL to the publisher URL when possible.
+// This is a heuristic: News links often contain 'articles/' or 'url?q=' redirect patterns.
+function resolveGoogleNewsLink(link) {
+    if (!link) return '';
+    try {
+        // If link contains 'articles/' and a publisher URL, try to extract
+        var m = link.match(/url=([^&]+)/);
+        if (m && m[1]) return decodeURIComponent(m[1]);
+        // fallback: return as-is
+        return link;
+    } catch (e) {
+        return link;
+    }
+}
+
+// Parse Google News-style titles like "Headline - Source" into headline and source
+function parseGoogleTitle(item) {
+    if (!item || !item.title) return;
+    var t = item.title.toString();
+    var m = t.match(/^(.*)\s[-–—]\s([^\n]+)$/);
+    if (m && m.length >= 3) {
+        item.title = m[1].trim();
+        var src = m[2].trim();
+        var existing = (item.source || '').toString().toLowerCase();
+        var isGooglePlaceholder = existing.indexOf('google news') !== -1 || existing.indexOf('top stories') !== -1 || existing.indexOf('news.google.com') !== -1 || existing === '';
+        if (isGooglePlaceholder) item.source = src;
+        return;
+    }
+    var parts = t.split(' - ');
+    if (parts.length >= 2) {
+        var src2 = parts[parts.length - 1].trim();
+        var headline2 = parts.slice(0, parts.length - 1).join(' - ').trim();
+        item.title = headline2;
+        var existing2 = (item.source || '').toString().toLowerCase();
+        var isGooglePlaceholder2 = existing2.indexOf('google news') !== -1 || existing2.indexOf('top stories') !== -1 || existing2.indexOf('news.google.com') !== -1 || existing2 === '';
+        if (isGooglePlaceholder2) item.source = src2;
+    }
+}
+
 // Return a matching company name from text using simple fuzzy (substring + word-boundary) checks
 function guessCompanyFromText(text) {
     if (!text) return '';
@@ -220,7 +185,9 @@ function guessRegionFromText(text) {
         var r = KNOWN_REGIONS[j];
         var re2 = new RegExp('\\b' + escapeRegExp(r.toLowerCase()) + '\\b');
         if (re2.test(lc)) return r;
-        if (lc.indexOf(r.toLowerCase().replace(/\s+/g, '')) !== -1) return r;
+        // Avoid matching very short tokens (e.g., 'uk') inside other words.
+        var compactR = r.toLowerCase().replace(/\s+/g, '');
+        if (compactR.length >= 3 && lc.indexOf(compactR) !== -1) return r;
     }
     // Fuzzy fallback
     var bestR = { name: '', score: 0 };
@@ -234,22 +201,31 @@ function guessRegionFromText(text) {
     return '';
 }
 
+// Map guessed region to a canonical name using REGION_CANONICALS (from Config)
+function canonicalizeRegion(region) {
+    if (!region) return '';
+    var key = region.toString().toLowerCase();
+    if (typeof REGION_CANONICALS !== 'undefined' && REGION_CANONICALS[key]) return REGION_CANONICALS[key];
+    return region;
+}
+
 function fetchAndStoreAll() {
-    if (SHEET_ID === 'REPLACE_WITH_YOUR_SHEET_ID') {
-        throw new Error('Please set SHEET_ID at the top of src/Feed.gs to your Google Sheet ID.');
-    }
+    // Resolve SHEET_ID from Project Properties (getSheetId will throw if missing)
+    var sheetId = getSheetId();
 
     CONFIG.forEach(function (cat) {
         try {
-            fetchCategory(cat);
+            fetchCategory(cat, sheetId);
         } catch (e) {
             Logger.log('Error fetching category %s: %s', cat.category, e.message);
         }
     });
 }
 
-function fetchCategory(cat) {
-    var ss = SpreadsheetApp.openById(SHEET_ID);
+function fetchCategory(cat, sheetId) {
+    // Accept sheetId passed in (preferred) or fall back to global SHEET_ID for compatibility
+    var idToUse = sheetId || SHEET_ID || getSheetId();
+    var ss = SpreadsheetApp.openById(idToUse);
     var sheet = ss.getSheetByName(cat.sheetName) || ss.insertSheet(cat.sheetName);
 
     // Ensure headers
@@ -258,7 +234,8 @@ function fetchCategory(cat) {
     // Load existing links and headlines to dedupe
     var existing = getExistingKeys(sheet, cat.headers);
 
-    var newRows = [];
+    // Collect rows along with their parsed date so we can insert newest-first
+    var newRowsObjs = [];
 
     // Build effective feed list: include configured feeds plus Google News per-query feeds if present
     var feedUrls = (cat.feeds || []).slice();
@@ -280,7 +257,7 @@ function fetchCategory(cat) {
             items.forEach(function (item) {
                 // enforce cutoff year: skip items without a parsable date or older than MIN_YEAR
                 var itemYear = getItemYear(item);
-                if (!itemYear || itemYear < MIN_YEAR) return; // skip
+                if (!itemYear || itemYear < MIN_YEAR) return;
 
                 var normTitle = normalizeTitle(item.title || '');
                 var linkVal = item.link || '';
@@ -288,7 +265,9 @@ function fetchCategory(cat) {
                     // enrich item with analyzed fields for better column population
                     item.analysis = analyzeItem(item);
                     var row = buildRowForCategory(item, cat);
-                    newRows.push(row);
+                    var parsedDate = null;
+                    try { parsedDate = item.pubDate ? new Date(item.pubDate) : null; } catch (e) { parsedDate = null; }
+                    newRowsObjs.push({ row: row, date: parsedDate || new Date(0) });
                     // mark dedupe keys
                     if (linkVal) existing.links[linkVal] = true;
                     if (normTitle) existing.titles[normTitle] = true;
@@ -299,12 +278,32 @@ function fetchCategory(cat) {
         }
     });
 
-    if (newRows.length > 0) {
-        // Append rows at bottom
-        sheet.getRange(sheet.getLastRow() + 1, 1, newRows.length, newRows[0].length).setValues(newRows);
-        Logger.log('Appended %s rows to %s', newRows.length, cat.sheetName);
+    if (newRowsObjs.length > 0) {
+        // Sort by date descending (newest first) then insert at the top (row 2) so newest appears first
+        newRowsObjs.sort(function (a, b) { return b.date - a.date; });
+        var rows = newRowsObjs.map(function (o) { return o.row; });
+        try {
+            // Ensure there's space and insert rows below the header
+            sheet.insertRows(2, rows.length);
+        } catch (e) {
+            // insertRows may fail on some sheet protections; fall back to appending then sorting
+            sheet.getRange(sheet.getLastRow() + 1, 1, rows.length, rows[0].length).setValues(rows);
+            Logger.log('Fallback appended %s rows to %s (insert at top failed): %s', rows.length, cat.sheetName, e.message);
+            // attempt to sort afterwards
+            try { sortSheetByDate(sheet, cat.headers); } catch (e2) { Logger.log('Sort fallback failed: %s', e2.message); }
+            return;
+        }
+        // Write the rows into the newly inserted area
+        sheet.getRange(2, 1, rows.length, rows[0].length).setValues(rows);
+        Logger.log('Inserted %s new rows at top of %s', rows.length, cat.sheetName);
     } else {
         Logger.log('No new rows for %s', cat.sheetName);
+    }
+    // Ensure sheet is sorted newest-first by the Date column after updating
+    try {
+        sortSheetByDate(sheet, cat.headers);
+    } catch (e) {
+        Logger.log('Unable to sort sheet %s by date: %s', cat.sheetName, e.message);
     }
 }
 
@@ -414,7 +413,7 @@ function analyzeItem(item) {
     // Region: only accept regions from the known regions list
     var regGuess = guessRegionFromText(text);
     if (regGuess) {
-        res.region = regGuess;
+        res.region = canonicalizeRegion(regGuess) || regGuess;
     }
 
     // Commodity and price info
