@@ -141,7 +141,15 @@ function buildRowForCategory(item, cat) {
             var clean = (raw || '').toString().replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim();
             row.push(truncateText(clean, ARTICLE_SNIPPET_MAX));
         } else if (col === 'link') {
-            row.push(item.link || '');
+            // Write a clickable hyperlink with display text 'LINK'
+            var rawLink = item.link || '';
+            if (rawLink) {
+                // Escape double quotes for insertion into formula
+                var safe = rawLink.toString().replace(/"/g, '""');
+                row.push('=HYPERLINK("' + safe + '", "LINK")');
+            } else {
+                row.push('');
+            }
         } else if (col === 'source') {
             row.push(item.source || '');
         } else {
