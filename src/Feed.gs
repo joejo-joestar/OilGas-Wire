@@ -61,7 +61,19 @@ var CONFIG = [
             'https://oilprice.com/rss/main',
             'https://www.investing.com/rss/news_25.rss',
         ],
-        googleNewsQueries: ['oil price', 'brent', 'wti', 'commodities', 'crude']
+        googleNewsQueries: [
+            "crude oil price",
+            "brent oil price",
+            "wti oil price",
+            "natural gas price",
+            "lng price",
+            "steel pipe price",
+            "carbon steel price",
+            "seamless pipe price",
+            "drill pipe price",
+            "diesel fuel price",
+            "oil and gas chemical price"
+        ]
     },
     {
         category: 'Leadership Changes',
@@ -71,7 +83,19 @@ var CONFIG = [
             'https://www.rigzone.com/news/rss/rigzone_original.aspx',
             'https://www.offshore-technology.com/feed/'
         ],
-        googleNewsQueries: ['appointed', 'named', 'appointed as', 'CEO', 'chief executive', 'joins as', 'leadership change']
+        googleNewsQueries: [
+            "ceo appointed oil and gas",
+            "new executive hire oil and gas",
+            "leadership change energy sector",
+            "hydrogen industry leadership transition",
+            "water treatment company ceo change",
+            "hydrogen fuel executive appointment",
+            "water sector board reshuffle",
+            "oil gas board member resignation",
+            "hydrogen startup leadership news"
+        ],
+        industries: ['Oil & Gas', 'Hydrogen', 'Water Treatment']
+
     },
     {
         category: 'Mergers and Acquisitions / Joint Ventures',
@@ -81,7 +105,7 @@ var CONFIG = [
             'https://www.reuters.com/business/energy/rss',
             'https://www.ft.com/?format=rss',
         ],
-        googleNewsQueries: ['merger', 'acquisition', 'acquires', 'joint venture', 'JV', 'buyout']
+        googleNewsQueries: ['merger', 'acquisition', 'acquires', 'joint venture', 'JV', 'buyout'],
     }
 ];
 
@@ -116,6 +140,9 @@ var KNOWN_REGIONS = [
     'USA', 'United States', 'Canada', 'Mexico', 'Latin America', 'Brazil', 'Argentina', 'Chile', 'Peru', 'Venezuela',
     'Europe', 'Mediterranean', 'Caspian', 'Kazakhstan', 'Azerbaijan', 'Turkmenistan', 'Russia', 'Siberia', 'Australia', 'New Zealand'
 ];
+
+var COMMODITIES = ["Oil", "Gas", "LNG", "Steel", "Pipe", "Chemical", "Valve", "Flange", "Diesel"];
+
 
 // Fuzzy matching threshold (0..1). Higher is stricter.
 var FUZZY_THRESHOLD = 0.80;
@@ -716,4 +743,3 @@ function fetchFeedDiagnostics() {
         });
     });
 }
-
