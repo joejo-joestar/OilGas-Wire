@@ -5,303 +5,6 @@
  * separate tabs in a Google Sheet. Configure categories below.
  */
 
-// SHEET_ID is stored in the Apps Script Project Properties (safer than hard-coding).
-// Set it in the Apps Script editor: File → Project properties → Script properties → Add SHEET_ID
-// You can also set it programmatically using setSheetId(value).
-
-var SHEET_ID = null; // not used directly; helper getSheetId() reads from PropertiesService
-
-function getSheetId() {
-    var id = PropertiesService.getScriptProperties().getProperty('SHEET_ID');
-    if (!id) {
-        throw new Error('Please set SHEET_ID in Project Properties (File → Project properties → Script properties)');
-    }
-    return id;
-}
-
-function setSheetId(id) {
-    if (!id) throw new Error('setSheetId requires a non-empty id');
-    PropertiesService.getScriptProperties().setProperty('SHEET_ID', id);
-}
-
-var CONFIG = [
-    {
-        category: 'Unified News',
-        sheetName: 'Unified News',
-        headers: ['Date', 'Headline', 'Industry', 'Company / Individual', 'Region', 'Article', 'Source', 'Link'],
-        feeds: [
-            'https://oilprice.com/rss/main',
-            'https://www.saudigulfprojects.com/feed/',
-            'https://www.offshore-technology.com/feed/',
-            'https://www.rigzone.com/news/rss/rigzone_original.aspx',
-            'https://news.google.com/rss/search?q=oil+and+gas&hl=en-US&gl=US&ceid=US:en'
-        ],
-        googleNewsQueries: [
-            "oil and gas contract awarded",
-            "oil and gas downstream contract awarded",
-            "oil and gas upstream contract awarded",
-            "oil and gas midstream contract awarded",
-            "oil and gas flng",
-            "oil and gas drilling",
-            "oil and gas production",
-            "oil and gas refinery",
-            "oil and gas water and waste water treatment",
-            "oil and gas water and waste watersolutions",
-            "oil and gas Chemicals",
-            "oil and gas Liquid mud plant",
-            "oil and gas vessel",
-            "opec oil decision"
-        ]
-    },
-    {
-        category: 'Oil and Raw Materials Prices',
-        sheetName: 'Prices',
-        headers: ['Date', 'Headline', 'Commodity', 'Price Info', 'Region', 'Article', 'Source', 'Link'],
-        feeds: [
-            'https://oilprice.com/rss/main',
-            'https://www.investing.com/rss/news_25.rss',
-        ],
-        googleNewsQueries: ['oil price', 'brent', 'wti', 'commodities', 'crude']
-    },
-    {
-        category: 'Leadership Changes',
-        sheetName: 'Leadership Changes',
-        headers: ['Date', 'Headline', 'Industry', 'Company / Individual', 'Region', 'Article', 'Source', 'Link'],
-        feeds: [
-            'https://www.rigzone.com/news/rss/rigzone_original.aspx',
-            'https://www.offshore-technology.com/feed/'
-        ],
-        googleNewsQueries: ['appointed', 'named', 'appointed as', 'CEO', 'chief executive', 'joins as', 'leadership change']
-    },
-    {
-        category: 'Mergers and Acquisitions / Joint Ventures',
-        sheetName: 'Mergers & JVs',
-        headers: ['Date', 'Headline', 'Companies', 'Deal Type', 'Deal Value', 'Region', 'Article', 'Source', 'Link'],
-        feeds: [
-            'https://www.reuters.com/business/energy/rss',
-            'https://www.ft.com/?format=rss',
-        ],
-        googleNewsQueries: ['merger', 'acquisition', 'acquires', 'joint venture', 'JV', 'buyout']
-    }
-];
-
-var FETCH_OPTIONS = {
-    muteHttpExceptions: true,
-    followRedirects: true,
-    headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0 Safari/537.36'
-    }
-};
-
-// Only accept items published in this year or later. Assumption: user wants items from
-// 2024 onwards (inclusive). If you want a different cutoff, change MIN_YEAR.
-var MIN_YEAR = 2025;
-
-// Known oil & gas companies and regions to help fuzzy matching
-var KNOWN_COMPANIES = [
-    // National oil companies & majors
-    'Saudi Aramco', 'Aramco', 'ADNOC', 'Abu Dhabi National Oil Company', 'QatarEnergy', 'Qatar Petroleum', 'Kuwait Oil Company', 'KOC', 'ENOC',
-    'BP', 'Royal Dutch Shell', 'Shell', 'ExxonMobil', 'Chevron', 'TotalEnergies', 'Total', 'Equinor', 'Petronas', 'ConocoPhillips', 'Eni', 'OMV', 'Pemex',
-    'Sinopec', 'CNPC', 'CNOOC', 'PetroChina', 'Lukoil', 'Rosneft', 'Gazprom', 'Repsol', 'Pertamina', 'PTT', 'YPF',
-    // Oilfield services & contractors
-    'Halliburton', 'Schlumberger', 'Baker Hughes', 'Weatherford', 'Technip', 'TechnipFMC', 'Saipem', 'Petrofac', 'Technomak', 'Subsea7', 'McDermott', 'KBR', 'Worley', 'Jacobs', 'Fluor', 'Bechtel', 'Aker Solutions',
-    // Energy / LNG / midstream
-    'Sapura Energy', 'Golar', 'Mitsui', 'JGC', 'Chiyoda', 'KBR', 'Wood', 'McDermott International'
-];
-
-var KNOWN_REGIONS = [
-    'UAE', 'United Arab Emirates', 'Abu Dhabi', 'Dubai', 'Sharjah', 'Saudi Arabia', 'KSA', 'Riyadh', 'Jeddah', 'Qatar', 'Doha', 'Kuwait', 'Oman', 'Bahrain', 'Iraq', 'Iran',
-    'Gulf', 'GCC', 'Middle East', 'North Sea', 'Norway', 'UK', 'Scotland', 'West Africa', 'Nigeria', 'Angola', 'Gabon', 'East Africa', 'Mozambique',
-    'Asia', 'Southeast Asia', 'Indonesia', 'Malaysia', 'Brunei', 'Vietnam', 'China', 'India', 'Pakistan',
-    'USA', 'United States', 'Canada', 'Mexico', 'Latin America', 'Brazil', 'Argentina', 'Chile', 'Peru', 'Venezuela',
-    'Europe', 'Mediterranean', 'Caspian', 'Kazakhstan', 'Azerbaijan', 'Turkmenistan', 'Russia', 'Siberia', 'Australia', 'New Zealand'
-];
-
-// Fuzzy matching threshold (0..1). Higher is stricter.
-var FUZZY_THRESHOLD = 0.80;
-
-// Normalize to alpha-numeric lower string (no spaces) for compact fuzzy compares
-function normalizeForFuzzy(s) {
-    if (!s) return '';
-    return s.toString().toLowerCase().replace(/[^a-z0-9]+/g, '');
-}
-
-// Levenshtein distance (iterative DP) - small strings only
-function levenshtein(a, b) {
-    a = a || '';
-    b = b || '';
-    var m = a.length, n = b.length;
-    if (m === 0) return n;
-    if (n === 0) return m;
-    var dp = [];
-    for (var i = 0; i <= m; i++) { dp[i] = [i]; }
-    for (var j = 1; j <= n; j++) dp[0][j] = j;
-    for (var i = 1; i <= m; i++) {
-        for (var j = 1; j <= n; j++) {
-            var cost = a.charAt(i - 1) === b.charAt(j - 1) ? 0 : 1;
-            dp[i][j] = Math.min(dp[i - 1][j] + 1, dp[i][j - 1] + 1, dp[i - 1][j - 1] + cost);
-        }
-    }
-    return dp[m][n];
-}
-
-// Compute similarity 0..1 based on Levenshtein normalized by max length
-function similarity(a, b) {
-    if (!a && !b) return 1;
-    if (!a || !b) return 0;
-    var A = normalizeForFuzzy(a), B = normalizeForFuzzy(b);
-    var d = levenshtein(A, B);
-    var max = Math.max(A.length, B.length);
-    if (max === 0) return 0;
-    return 1 - (d / max);
-}
-
-// Escape regular expression special chars in a string
-function escapeRegExp(s) {
-    return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-}
-
-// Return a matching company name from text using simple fuzzy (substring + word-boundary) checks
-function guessCompanyFromText(text) {
-    if (!text) return '';
-    var lc = text.toLowerCase();
-    for (var i = 0; i < KNOWN_COMPANIES.length; i++) {
-        var name = KNOWN_COMPANIES[i];
-        var re = new RegExp('\\b' + escapeRegExp(name.toLowerCase()) + '\\b');
-        if (re.test(lc)) return name;
-        // also check without spaces for some short tokens (e.g., ADNOC)
-        if (lc.indexOf(name.toLowerCase().replace(/\s+/g, '')) !== -1) return name;
-    }
-    // Fuzzy fallback: check similarity against each known company using compacted forms
-    var best = { name: '', score: 0 };
-    var compactText = normalizeForFuzzy(text);
-    for (var j = 0; j < KNOWN_COMPANIES.length; j++) {
-        var k = KNOWN_COMPANIES[j];
-        var sim = similarity(compactText, normalizeForFuzzy(k));
-        if (sim > best.score) { best.score = sim; best.name = k; }
-    }
-    if (best.score >= FUZZY_THRESHOLD) return best.name;
-    return '';
-}
-
-// Return a matching region from text
-function guessRegionFromText(text) {
-    if (!text) return '';
-    var lc = text.toLowerCase();
-    for (var j = 0; j < KNOWN_REGIONS.length; j++) {
-        var r = KNOWN_REGIONS[j];
-        var re2 = new RegExp('\\b' + escapeRegExp(r.toLowerCase()) + '\\b');
-        if (re2.test(lc)) return r;
-        if (lc.indexOf(r.toLowerCase().replace(/\s+/g, '')) !== -1) return r;
-    }
-    // Fuzzy fallback
-    var bestR = { name: '', score: 0 };
-    var compactText2 = normalizeForFuzzy(text);
-    for (var k2 = 0; k2 < KNOWN_REGIONS.length; k2++) {
-        var cand = KNOWN_REGIONS[k2];
-        var s = similarity(compactText2, normalizeForFuzzy(cand));
-        if (s > bestR.score) { bestR.score = s; bestR.name = cand; }
-    }
-    if (bestR.score >= FUZZY_THRESHOLD) return bestR.name;
-    return '';
-}
-
-function fetchAndStoreAll() {
-    if (SHEET_ID === 'REPLACE_WITH_YOUR_SHEET_ID') {
-        throw new Error('Please set SHEET_ID at the top of src/Feed.gs to your Google Sheet ID.');
-    }
-
-    CONFIG.forEach(function (cat) {
-        try {
-            fetchCategory(cat);
-        } catch (e) {
-            Logger.log('Error fetching category %s: %s', cat.category, e.message);
-        }
-    });
-}
-
-function fetchCategory(cat) {
-    var ss = SpreadsheetApp.openById(SHEET_ID);
-    var sheet = ss.getSheetByName(cat.sheetName) || ss.insertSheet(cat.sheetName);
-
-    // Ensure headers
-    ensureHeaders(sheet, cat.headers);
-
-    // Load existing links and headlines to dedupe
-    var existing = getExistingKeys(sheet, cat.headers);
-
-    var newRows = [];
-
-    // Build effective feed list: include configured feeds plus Google News per-query feeds if present
-    var feedUrls = (cat.feeds || []).slice();
-    if (cat.googleNewsQueries && cat.googleNewsQueries.length) {
-        cat.googleNewsQueries.forEach(function (q) {
-            var encoded = encodeURIComponent(q);
-            feedUrls.push('https://news.google.com/rss/search?q=' + encoded + '&hl=en-US&gl=US&ceid=US:en');
-        });
-    }
-
-    feedUrls.forEach(function (feedUrl) {
-        try {
-            var resp = UrlFetchApp.fetch(feedUrl, FETCH_OPTIONS);
-            var xml = resp.getContentText();
-            if (resp.getResponseCode() === 401 || resp.getResponseCode() === 403) {
-                Logger.log('Failed to fetch %s: HTTP %s (site likely blocks automated requests)', feedUrl, resp.getResponseCode());
-            }
-            var items = parseFeed(xml, feedUrl);
-            items.forEach(function (item) {
-                // enforce cutoff year: skip items without a parsable date or older than MIN_YEAR
-                var itemYear = getItemYear(item);
-                if (!itemYear || itemYear < MIN_YEAR) return; // skip
-
-                var normTitle = normalizeTitle(item.title || '');
-                var linkVal = item.link || '';
-                if (matchesQueries(item, cat.queries) && !existing.links[linkVal] && !existing.titles[normTitle]) {
-                    // enrich item with analyzed fields for better column population
-                    item.analysis = analyzeItem(item);
-                    var row = buildRowForCategory(item, cat);
-                    newRows.push(row);
-                    // mark dedupe keys
-                    if (linkVal) existing.links[linkVal] = true;
-                    if (normTitle) existing.titles[normTitle] = true;
-                }
-            });
-        } catch (e) {
-            Logger.log('Failed to fetch or parse %s: %s', feedUrl, e.message);
-        }
-    });
-
-    if (newRows.length > 0) {
-        // Append rows at bottom
-        sheet.getRange(sheet.getLastRow() + 1, 1, newRows.length, newRows[0].length).setValues(newRows);
-        Logger.log('Appended %s rows to %s', newRows.length, cat.sheetName);
-    } else {
-        Logger.log('No new rows for %s', cat.sheetName);
-    }
-}
-
-// Ensure header row exists and matches provided headers
-function ensureHeaders(sheet, headers) {
-    var firstRow = sheet.getRange(1, 1, 1, sheet.getMaxColumns()).getValues()[0];
-    var needRewrite = false;
-    // If sheet is empty or headers don't match, set headers
-    if (sheet.getLastRow() === 0) needRewrite = true;
-    if (!needRewrite) {
-        for (var i = 0; i < headers.length; i++) {
-            if (firstRow[i] !== headers[i]) {
-                needRewrite = true;
-                break;
-            }
-        }
-    }
-
-    if (needRewrite) {
-        sheet.clear();
-        sheet.getRange(1, 1, 1, headers.length).setValues([headers]);
-    }
-}
-
-// Build a row matching category headers. Basic mapping; fields not available are left blank.
 function buildRowForCategory(item, cat) {
     var h = cat.headers;
     var row = [];
@@ -311,8 +14,11 @@ function buildRowForCategory(item, cat) {
             row.push(item.pubDate ? new Date(item.pubDate) : '');
         } else if (col.indexOf('headline') !== -1 || col.indexOf('title') !== -1) {
             row.push(item.title || '');
-        } else if (col.indexOf('article') !== -1 || col === 'article') {
-            row.push(item.summary || item.content || '');
+        } else if (col.indexOf('article') !== -1 || col === 'article' || col.indexOf('snippet') !== -1) {
+            // prefer summary, fallback to content; strip simple HTML and truncate for readability
+            var raw = item.summary || item.content || '';
+            var clean = (raw || '').toString().replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim();
+            row.push(truncateText(clean, ARTICLE_SNIPPET_MAX));
         } else if (col === 'link') {
             row.push(item.link || '');
         } else if (col === 'source') {
@@ -527,7 +233,6 @@ function parseFeed(xmlText, feedUrl) {
             }
         }
 
-        // Clean up known problematic sequences: remove HTML <meta> and unclosed tags that break XML parser
         // (only minimal sanitization)
         xmlText = xmlText.replace(/\uFFFE|\uFEFF/g, '');
 
@@ -550,7 +255,7 @@ function parseFeed(xmlText, feedUrl) {
                 }
                 // Prefer <source> child if present (Google News provides this), otherwise use channel title
                 var itemSource = it.getChildText('source', ns) || it.getChildText('source') || chTitle;
-                items.push({
+                var newItem = {
                     title: it.getChildText('title') || '',
                     link: link || '',
                     pubDate: it.getChildText('pubDate') || '',
@@ -558,11 +263,22 @@ function parseFeed(xmlText, feedUrl) {
                     content: content,
                     source: itemSource,
                     feedUrl: feedUrl
-                });
+                };
+                // normalize HTML-in-title or site-specific HTML snippets
+                newItem = normalizeItemHtmlFields(newItem) || newItem;
+                items.push(newItem);
                 // if this is a Google News RSS item, titles are "{headline} - {source}"; extract source
                 if (feedUrl && feedUrl.indexOf('news.google.com') !== -1) {
                     var last = items[items.length - 1];
                     parseGoogleTitle(last);
+                    // if parseGoogleTitle left HTML fragments, normalize again
+                    last = normalizeItemHtmlFields(last) || last;
+                    // attempt to resolve Google News redirect link to publisher URL
+                    try { last.link = resolveGoogleNewsLink(last.link || last.feedUrl); } catch (e) { }
+                    // If there's no snippet/summary, duplicate the cleaned headline for readability
+                    if ((!last.summary || !last.summary.toString().trim()) && last.title) {
+                        last.summary = truncateText(humanizeHeadline(last.title), ARTICLE_SNIPPET_MAX);
+                    }
                 }
             });
         } else if (name === 'feed') {
@@ -580,7 +296,7 @@ function parseFeed(xmlText, feedUrl) {
                 var content = ent.getChildText('content', ns) || ent.getChildText('summary', ns) || '';
                 // Prefer <source> element within entry if present
                 var entrySource = ent.getChildText('source', ns) || ent.getChildText('source') || feedTitle;
-                items.push({
+                var newEnt = {
                     title: ent.getChildText('title', ns) || '',
                     link: link || ent.getChildText('link', ns) || '',
                     pubDate: ent.getChildText('updated', ns) || ent.getChildText('published', ns) || '',
@@ -588,10 +304,17 @@ function parseFeed(xmlText, feedUrl) {
                     content: content,
                     source: entrySource,
                     feedUrl: feedUrl
-                });
+                };
+                newEnt = normalizeItemHtmlFields(newEnt) || newEnt;
+                items.push(newEnt);
                 if (feedUrl && feedUrl.indexOf('news.google.com') !== -1) {
                     var last2 = items[items.length - 1];
                     parseGoogleTitle(last2);
+                    last2 = normalizeItemHtmlFields(last2) || last2;
+                    try { last2.link = resolveGoogleNewsLink(last2.link || last2.feedUrl); } catch (e) { }
+                    if ((!last2.summary || !last2.summary.toString().trim()) && last2.title) {
+                        last2.summary = truncateText(humanizeHeadline(last2.title), ARTICLE_SNIPPET_MAX);
+                    }
                 }
             });
         } else {
@@ -604,51 +327,6 @@ function parseFeed(xmlText, feedUrl) {
     return items;
 }
 
-// If Google News RSS provides titles as "{headline} - {source}", split them.
-function parseGoogleTitle(item) {
-    if (!item || !item.title) return;
-    var t = item.title.toString();
-    // Try to split by the last dash (handles '-', '–', '—') so headlines that contain dashes
-    // are preserved while the final suffix (the publisher) is extracted.
-    var m = t.match(/^(.*)\s[-–—]\s([^\n]+)$/);
-    if (m && m.length >= 3) {
-        var headline = m[1].trim();
-        var src = m[2].trim();
-        item.title = headline;
-        // Only set source if not already provided or if it appears to be a Google channel placeholder
-        var existing = (item.source || '').toString().toLowerCase();
-        var isGooglePlaceholder = existing.indexOf('google news') !== -1 || existing.indexOf('top stories') !== -1 || existing.indexOf('news.google.com') !== -1 || existing === '';
-        if (isGooglePlaceholder) item.source = src;
-        return;
-    }
-
-    // Fallback: simple split on ' - ' if the regex didn't match
-    var parts = t.split(' - ');
-    if (parts.length >= 2) {
-        var src2 = parts[parts.length - 1].trim();
-        var headline2 = parts.slice(0, parts.length - 1).join(' - ').trim();
-        item.title = headline2;
-        var existing2 = (item.source || '').toString().toLowerCase();
-        var isGooglePlaceholder2 = existing2.indexOf('google news') !== -1 || existing2.indexOf('top stories') !== -1 || existing2.indexOf('news.google.com') !== -1 || existing2 === '';
-        if (isGooglePlaceholder2) item.source = src2;
-    }
-}
-
-function getExistingLinks(sheet, headerCount) {
-    var res = {};
-    var lastRow = sheet.getLastRow();
-    if (lastRow < 2) return res;
-    var data = sheet.getRange(2, headerCount, lastRow - 1, 1).getValues();
-    // assume link is the last column; headerCount is number of columns
-    // We used getRange(2, headerCount, ... ,1) to read the last column
-    for (var i = 0; i < data.length; i++) {
-        var v = data[i][0];
-        if (v) res[v] = true;
-    }
-    return res;
-}
-
-// Return both existing links and normalized titles for deduplication.
 function getExistingKeys(sheet, headers) {
     var res = { links: {}, titles: {} };
     var lastRow = sheet.getLastRow();
@@ -672,13 +350,36 @@ function normalizeTitle(t) {
     return (t || '').toString().trim().toLowerCase().replace(/\s+/g, ' ').replace(/["'’`\-–—:;,.()]/g, '');
 }
 
-// Small helper used when testing from the Apps Script editor
-function testRun() {
-    fetchAndStoreAll();
+// Sort the sheet by the Date column (newest first). Expects headers array so we can
+// determine which column contains the date. If no Date column is present, no-op.
+function sortSheetByDate(sheet, headers) {
+    if (!sheet || !headers || headers.length === 0) return;
+    // find index of the first header that contains 'date' (case-insensitive)
+    var dateCol = -1;
+    for (var i = 0; i < headers.length; i++) {
+        if ((headers[i] || '').toString().toLowerCase().indexOf('date') !== -1) { dateCol = i + 1; break; }
+    }
+    if (dateCol === -1) return; // nothing to sort by
+
+    var lastRow = sheet.getLastRow();
+    var lastCol = Math.max(sheet.getLastColumn(), headers.length);
+    // nothing to sort if only header or empty
+    if (lastRow <= 1) return;
+
+    try {
+        // Range.sort expects 1-based column index relative to the sheet
+        // Sort descending (newest first)
+        sheet.getRange(2, 1, lastRow - 1, lastCol).sort({ column: dateCol, ascending: false });
+    } catch (e) {
+        // As a fallback, try the sheet-level sort method
+        try {
+            sheet.sort(dateCol, false);
+        } catch (e2) {
+            throw new Error('Unable to sort sheet by date: ' + e2.message);
+        }
+    }
 }
 
-// Try to extract a year integer from item.pubDate / item.pubDate-like strings.
-// Returns numeric year (e.g. 2024) or null if unparsable.
 function getItemYear(item) {
     if (!item) return null;
     var dateStr = item.pubDate || item.pubdate || item.updated || item.published || '';
@@ -696,24 +397,3 @@ function getItemYear(item) {
     if (m && m[1]) return parseInt(m[1], 10);
     return null;
 }
-
-// Diagnostic: fetch each configured feed and log response metadata + sample content
-function fetchFeedDiagnostics() {
-    CONFIG.forEach(function (cat) {
-        cat.feeds.forEach(function (feedUrl) {
-            try {
-                var resp = UrlFetchApp.fetch(feedUrl, FETCH_OPTIONS);
-                var code = resp.getResponseCode();
-                var ct = resp.getHeaders()['Content-Type'] || resp.getHeaders()['content-type'] || '';
-                var text = resp.getContentText();
-                var snippet = text ? text.substring(0, 4096) : '';
-                var looks = (text || '').toLowerCase().indexOf('<rss') !== -1 || (text || '').toLowerCase().indexOf('<feed') !== -1;
-                Logger.log('DIAG %s -> code:%s content-type:%s looksLikeFeed:%s url:%s', cat.sheetName, code, ct, looks, feedUrl);
-                if (!looks) Logger.log('DIAG SNIPPET %s: %s', feedUrl, snippet.replace(/\n/g, ' ').substring(0, 800));
-            } catch (e) {
-                Logger.log('DIAG ERROR fetching %s : %s', feedUrl, e.message);
-            }
-        });
-    });
-}
-
