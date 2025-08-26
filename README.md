@@ -1,4 +1,4 @@
-<h1 align="center">Automated Newsletter & RSS Feed</h1>
+<h1 align="center">📧 Automated Newsletter & 📰 RSS Feed</h1>
 
 <p align = "center">
   <img src="assets/pixpagercar.png" alt="Feed Car" title="Feed Car" width="128">
