@@ -69,15 +69,28 @@ var CONFIG = [
         googleNewsQueries: [
             "ceo appointed oil and gas",
             "new executive hire oil and gas",
+            "named CEO oil and gas",
+            "appointed CEO oil and gas",
+            "appointed CFO oil and gas",
+            "appointed chairman oil and gas",
+            "board appointment oil and gas",
+            "executive appointment oil and gas",
             "leadership change energy sector",
+            "leadership reshuffle energy sector",
+            "ceo resigns oil and gas",
+            "ceo steps down oil and gas",
+            "joins board oil and gas",
+            "promoted to CEO oil and gas",
+            "managing director appointed oil and gas",
             "hydrogen industry leadership transition",
+            "appointed CEO hydrogen",
+            "hydrogen executive appointment",
+            "hydrogen startup leadership news",
             "water treatment company ceo change",
-            "hydrogen fuel executive appointment",
             "water sector board reshuffle",
-            "oil gas board member resignation",
-            "hydrogen startup leadership news"
+            "appointed CEO water treatment",
+            "water treatment executive appointment"
         ],
-
     },
     {
         category: 'Mergers, Acquisitions, and Joint Ventures',
@@ -112,10 +125,15 @@ var KNOWN_COMPANIES = [
     'Saudi Aramco', 'Aramco', 'ADNOC', 'Abu Dhabi National Oil Company', 'QatarEnergy', 'Qatar Petroleum', 'Kuwait Oil Company', 'KOC', 'ENOC',
     'BP', 'Royal Dutch Shell', 'Shell', 'ExxonMobil', 'Chevron', 'TotalEnergies', 'Total', 'Equinor', 'Petronas', 'ConocoPhillips', 'Eni', 'OMV', 'Pemex',
     'Sinopec', 'CNPC', 'CNOOC', 'PetroChina', 'Lukoil', 'Rosneft', 'Gazprom', 'Repsol', 'Pertamina', 'PTT', 'YPF',
+
     // Oilfield services & contractors
     'Halliburton', 'Schlumberger', 'Baker Hughes', 'Weatherford', 'Technip', 'TechnipFMC', 'Saipem', 'Petrofac', 'Technomak', 'Subsea7', 'McDermott', 'KBR', 'Worley', 'Jacobs', 'Fluor', 'Bechtel', 'Aker Solutions',
+
     // Energy / LNG / midstream
-    'Sapura Energy', 'Golar', 'Mitsui', 'JGC', 'Chiyoda', 'KBR', 'Wood', 'McDermott International'
+    'Sapura Energy', 'Golar', 'Mitsui', 'JGC', 'Chiyoda', 'KBR', 'Wood', 'McDermott International', 'Bloom Energy',
+
+    // Water / environmental / energy transition & other requested firms
+    'Veolia', 'GE Water', 'Xylem', 'Suez', 'NEL'
 ];
 
 var KNOWN_REGIONS = [
@@ -125,15 +143,6 @@ var KNOWN_REGIONS = [
     'USA', 'United States', 'United States of America', 'US', 'U.S.', 'America', 'Canada', 'Mexico', 'Latin America', 'Brazil', 'Argentina', 'Chile', 'Peru', 'Venezuela',
     'Ukraine', 'Russia', 'Europe', 'Mediterranean', 'Caspian', 'Kazakhstan', 'Azerbaijan', 'Turkmenistan', 'Russia', 'Siberia', 'Australia', 'New Zealand'
 ];
-
-var ARTICLE_SNIPPET_MAX = 100;
-
-var COMMODITIES = ["Oil", "Gas", "LNG", "Steel", "Pipe", "Chemical", "Valve", "Flange", "Diesel"];
-
-var INDUSTRIES = ['Oil & Gas', 'Hydrogen', 'Water Treatment'];
-
-// Fuzzy matching threshold (0..1). Higher is stricter.
-var FUZZY_THRESHOLD = 0.80;
 
 // Map common region name variants to a standardized canonical name/code.
 var REGION_CANONICALS = {
@@ -150,4 +159,23 @@ var REGION_CANONICALS = {
     'australia': 'Australia', 'new zealand': 'New Zealand',
     'africa': 'Africa',
 };
+
+var COMMODITIES = ["Oil", "Gas", "LNG", "Steel", "Pipe", "Chemical", "Valve", "Flange", "Diesel"];
+
+var INDUSTRIES = ['Oil & Gas', 'Hydrogen', 'Water Treatment'];
+
+// Editable alias map for industries. Keys should match the canonical values in INDUSTRIES
+// (case-insensitive). Each key maps to an array of tokens/phrases that should be
+// recognized in headlines/snippets to classify that industry.
+var INDUSTRY_ALIASES = {
+    'oil & gas': ['oil', 'gas', 'petrol', 'petroleum', 'crude', 'upstream', 'midstream', 'downstream', 'refinery', 'rig', 'drill', 'well', 'platform'],
+    'hydrogen': ['hydrogen', 'h2', 'fuel cell', 'green hydrogen', 'blue hydrogen'],
+    'water treatment': ['water treatment', 'water', 'wastewater', 'sewage', 'desalination', 'water sector', 'water services']
+};
+
+var ARTICLE_SNIPPET_MAX = 100;
+
+// Fuzzy matching threshold (0..1). Higher is stricter.
+var FUZZY_THRESHOLD = 0.80;
+
 

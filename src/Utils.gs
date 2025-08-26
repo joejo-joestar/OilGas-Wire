@@ -210,6 +210,7 @@ function analyzeItem(item) {
         dealValue: '',
         region: '',
         commodity: '',
+        industry: '',
         priceInfo: ''
     };
 
@@ -250,6 +251,15 @@ function analyzeItem(item) {
         res.region = canonicalizeRegion(regGuess) || regGuess;
     }
 
+    // Industry detection from configured INDUSTRIES list
+    try {
+        if (typeof identifyIndustry === 'function') {
+            res.industry = identifyIndustry(text) || '';
+        }
+    } catch (e) {
+        res.industry = '';
+    }
+
     // Commodity and price info: derive commodity only from the configured COMMODITIES list
     try {
         res.commodity = identifyCommodity(text) || '';
@@ -274,15 +284,83 @@ function inferFieldFromItem(col, item) {
     if (col.indexOf('region') !== -1) {
         // Try to find continent/country mentions (super naive)
         var regions = ['asia', 'europe', 'africa', 'middle east', 'usa', 'united states', 'china', 'india'];
-        for (var i = 0; i < regions.length; i++) if (text.indexOf(regions[i]) !== -1) return regions[i];
+        for (var i = 0; i < regions.length; i++) {
+            if (text.indexOf(regions[i]) !== -1) {
+                try {
+                    // Use canonical mapping when available (e.g., 'africa' -> 'Africa')
+                    var canon = canonicalizeRegion(regions[i]);
+                    if (canon) return canon;
+                } catch (e) { }
+                // Fallback: capitalize token
+                return regions[i].charAt(0).toUpperCase() + regions[i].slice(1);
+            }
+        }
         return '';
     }
     if (col.indexOf('deal') !== -1 || col.indexOf('value') !== -1) return '';
     if (col.indexOf('industry') !== -1) return 'Oil & Gas';
     if (col.indexOf('commodity') !== -1) {
-        if (text.indexOf('brent') !== -1) return 'Brent';
-        if (text.indexOf('wti') !== -1) return 'WTI';
-        return '';
+        try {
+            return identifyCommodity(text) || '';
+        } catch (e) {
+            return '';
+        }
+    }
+    return '';
+}
+
+// Identify industry from free text using the INDUSTRIES list in Config.gs.
+// Returns the first matching industry or empty string.
+function identifyIndustry(text) {
+    if (!text) return '';
+    var lc = text.toString().toLowerCase();
+    try {
+        if (typeof INDUSTRIES !== 'undefined' && INDUSTRIES && INDUSTRIES.length) {
+            // alias lists for common variants and synonyms. Prefer editable map from Config.gs
+            var aliasMap = {};
+            if (typeof INDUSTRY_ALIASES !== 'undefined' && INDUSTRY_ALIASES) aliasMap = INDUSTRY_ALIASES;
+            else {
+                aliasMap = {
+                    'oil & gas': ['oil', 'gas', 'petrol', 'petroleum', 'crude', 'upstream', 'midstream', 'downstream', 'refinery', 'rig', 'drill', 'well', 'platform'],
+                    'hydrogen': ['hydrogen', 'h2', 'fuel cell', 'green hydrogen', 'blue hydrogen'],
+                    'water treatment': ['water treatment', 'water', 'wastewater', 'sewage', 'desalination', 'water sector', 'water services']
+                };
+            }
+
+            // 1) Exact alias token matches using word-boundary
+            for (var k = 0; k < INDUSTRIES.length; k++) {
+                var canonical = INDUSTRIES[k];
+                if (!canonical) continue;
+                var key = canonical.toString().toLowerCase();
+                var aliases = aliasMap[key] || [key];
+                for (var ai = 0; ai < aliases.length; ai++) {
+                    var token = aliases[ai];
+                    var re = new RegExp('\\b' + escapeRegExp(token) + '\\b');
+                    if (re.test(lc)) return canonical;
+                }
+            }
+
+            // 2) Primary-token check (e.g., 'Oil & Gas' -> 'oil')
+            for (var m = 0; m < INDUSTRIES.length; m++) {
+                var indName = INDUSTRIES[m];
+                if (!indName) continue;
+                var primary = indName.toString().toLowerCase().split('&')[0].trim();
+                if (primary && lc.indexOf(primary) !== -1) return indName;
+            }
+
+            // 3) Fuzzy fallback: similarity between compacted text and industry name
+            var compactText = normalizeForFuzzy(lc);
+            var best = { name: '', score: 0 };
+            for (var n = 0; n < INDUSTRIES.length; n++) {
+                var cand = INDUSTRIES[n];
+                if (!cand) continue;
+                var s = similarity(compactText, normalizeForFuzzy(cand));
+                if (s > best.score) { best.score = s; best.name = cand; }
+            }
+            if (best.score >= FUZZY_THRESHOLD) return best.name;
+        }
+    } catch (e) {
+        // ignore and fall through
     }
     return '';
 }

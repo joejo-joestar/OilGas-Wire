@@ -150,6 +150,7 @@ function buildRowForCategory(item, cat) {
             var val = '';
             if (item.analysis) {
                 if (col.indexOf('company') !== -1 || col.indexOf('companies') !== -1) val = item.analysis.company || '';
+                else if (col.indexOf('industry') !== -1) val = item.analysis.industry || '';
                 else if (col.indexOf('deal') !== -1 || col.indexOf('type') !== -1) val = item.analysis.dealType || '';
                 else if (col.indexOf('value') !== -1) val = item.analysis.dealValue || '';
                 else if (col.indexOf('region') !== -1) val = item.analysis.region || '';
