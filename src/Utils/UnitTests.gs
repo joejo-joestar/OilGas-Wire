@@ -156,7 +156,8 @@ function test_value_parsing_formats() {
         { text: '(US$1.2bn)', expect: 'US$1.2bn' },
         { text: 'approx 1,200,000', expect: '1,200,000' },
         { text: 'value: 1.5 million.', expect: '1.5 million' },
-        { text: 'the price was $500,000,', expect: '$500,000' }
+        { text: 'the price was $500,000,', expect: '$500,000' },
+        { text: 'Morgan Stanley Sees Slower Oil Stockpile Build and Keeps Brent Outlook at $65', expect: '$65' }
     ];
     for (var i = 0; i < samples.length; i++) {
         var s = samples[i];

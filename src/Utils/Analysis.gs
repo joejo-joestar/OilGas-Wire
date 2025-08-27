@@ -199,21 +199,21 @@ function analyzeItem(item) {
     var valueRegex = new RegExp(
         '(?:' +
         // Prefix currency form: e.g. $1.2bn or USD 1,200 million
-        '(?:' + '(?:US\\$|USD|EUR|€|GBP|£|Rs\\.?|INR|₹|\\$)\\s*[0-9][0-9,]*(?:\\.[0-9]+)?(?:[kKmMbB]{1,2})?' +
-        '(?:\\s*(?:bn|b\\.?n\\.?|billion|m(?:illion)?|k|thousand|crore|cr|lakh|lac|lacs|lakhs))?' +
+        '(?:' + '(?:US\\$|USD|EUR|€|GBP|£|Rs\\.?|INR|₹|\\$)\\s*[0-9][0-9,]*(?:\\.[0-9]+)?(?:[kKmMbB]{1,2}(?![a-zA-Z]))?' +
+        '(?:\\s*(?:bn\\b|b\\.?n\\.?\\b|billion\\b|m(?:illion)?\\b|k\\b|thousand\\b|crore\\b|cr\\b|lakh\\b|lac\\b|lacs\\b|lakhs\\b))?' +
         '(?:\\s*(?:dollars|usd|rupees|inr))?' +
         ')' +
         '|' +
         // Suffix currency form: e.g. 25 crore rupees, 50 lakh rupees
         '(?:[0-9][0-9,]*(?:\\.[0-9]+)?' +
-        '(?:\\s*(?:bn|b\\.?n\\.?|billion|m(?:illion)?|k|thousand|crore|cr|lakh|lac|lacs|lakhs))\\s*(?:dollars|rupees|usd|inr)' +
+        '(?:\\s*(?:bn\\b|b\\.?n\\.?\\b|billion\\b|m(?:illion)?\\b|k\\b|thousand\\b|crore\\b|cr\\b|lakh\\b|lac\\b|lacs\\b|lakhs\\b))\\s*(?:dollars|rupees|usd|inr)' +
         ')' +
         ')', 'i'
     );
     // Find all matches and pick the best candidate based on currency presence and scale
     try {
         // First, look for currency-anchored patterns that include attached suffixes
-        var currencyAnchoredRegex = /(?:US\$|USD|EUR|€|GBP|£|Rs\.?|INR|₹|\$)\s*[0-9][0-9,]*(?:\.[0-9]+)?(?:[a-zA-Z]{0,3})?(?:\s*(?:bn|b\.?n\.?|billion|m(?:illion)?|mm|k|thousand|crore|cr|lakh|lac|lacs|lakhs))?(?:\s*(?:dollars|usd|rupees|inr))?/i;
+        var currencyAnchoredRegex = /(?:US\$|USD|EUR|€|GBP|£|Rs\.?|INR|₹|\$)\s*[0-9][0-9,]*(?:\.[0-9]+)?(?:[kKmMbB]{1,2}(?![a-zA-Z]))?(?:\s*(?:bn\b|b\.?n\.?\b|billion\b|m(?:illion)?\b|mm\b|k\b|thousand\b|crore\b|cr\b|lakh\b|lac\b|lacs\b|lakhs\b))?(?:\s*(?:dollars|usd|rupees|inr))?/i;
         // Use exec loop to capture match indexes so we can deterministically
         // inspect the characters immediately after each match and extend the
         // token when a recognized suffix appears (B, bn, billion, M, crore, etc.).
@@ -410,12 +410,12 @@ function debugMonetaryExtraction(text) {
     var valueRegex = new RegExp(
         '(?:' +
         '(?:' + '(?:US\\$|USD|EUR|€|GBP|£|Rs\\.?|INR|₹|\\$)\\s*[0-9][0-9,]*(?:\\.[0-9]+)?' +
-        '(?:\\s*(?:bn|b\\.?n\\.?|billion|m(?:illion)?|k|thousand|crore|cr|lakh|lac|lacs|lakhs))?' +
+        '(?:\\s*(?:bn\\b|b\\.?n\\.?\\b|billion\\b|m(?:illion)?\\b|k\\b|thousand\\b|crore\\b|cr\\b|lakh\\b|lac\\b|lacs\\b|lakhs\\b))?' +
         '(?:\\s*(?:dollars|usd|rupees|inr))?' +
         ')' +
         '|' +
         '(?:[0-9][0-9,]*(?:\\.[0-9]+)?' +
-        '(?:\\s*(?:bn|b\\.?n\\.?|billion|m(?:illion)?|k|thousand|crore|cr|lakh|lac|lacs|lakhs))\\s*(?:dollars|rupees|usd|inr)' +
+        '(?:\\s*(?:bn\\b|b\\.?n\\.?\\b|billion\\b|m(?:illion)?\\b|k\\b|thousand\\b|crore\\b|cr\\b|lakh\\b|lac\\b|lacs\\b|lakhs\\b))\\s*(?:dollars|rupees|usd|inr)' +
         ')' +
         ')', 'ig'
     );
