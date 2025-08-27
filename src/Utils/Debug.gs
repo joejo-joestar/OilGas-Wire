@@ -1,8 +1,14 @@
 /**
  * Debug.gs
  *
- * Debug and diagnostic helpers for the Feed fetcher. These are intentionally
- * separated from the main `Feed.gs` runtime to keep production code small.
+ * Debug and diagnostic helpers for the Feed fetcher.
+ * These functions are not called by the main flow, but can be run manually
+ * from the Apps Script editor to help diagnose issues with authorization,
+ * feed fetching, or sheet access.
+ *
+ * Note: these functions may require additional permissions when run manually.
+ * They are not included in the main flow to avoid unnecessary permission prompts.
+ *
  */
 
 /**
@@ -11,7 +17,6 @@
  * Run manually in the Apps Script editor to trigger authorization flows.
  */
 function testRun() {
-    // Clear all configured category sheets (keep header row) then run full fetch.
     try {
         var id = getSheetId();
         var masked = (id && id.length > 10) ? (id.substring(0, 4) + '...' + id.substring(id.length - 4)) : id;
@@ -20,7 +25,6 @@ function testRun() {
         CONFIG.forEach(function (cat) {
             var sheet = ss.getSheetByName(cat.sheetName);
             if (!sheet) {
-                // create sheet so fetch run has somewhere to write
                 sheet = ss.insertSheet(cat.sheetName);
                 ensureHeaders(sheet, cat.headers);
                 return;
@@ -28,11 +32,9 @@ function testRun() {
             var lastRow = sheet.getLastRow();
             var lastCol = Math.max(sheet.getLastColumn(), cat.headers.length || 1);
             if (lastRow > 1) {
-                // clear everything below the header row
                 try {
                     sheet.getRange(2, 1, lastRow - 1, lastCol).clearContent();
                 } catch (e) {
-                    // Fallback: if range selection fails, attempt to delete rows then re-create header
                     try {
                         sheet.deleteRows(2, Math.max(0, lastRow - 1));
                         // ensure at least one empty row exists after header
@@ -42,15 +44,12 @@ function testRun() {
                     }
                 }
             }
-            // ensure headers exist and are correct
             ensureHeaders(sheet, cat.headers);
         });
     } catch (e) {
         Logger.log('TESTRUN error while preparing sheets: %s', e.toString());
-        // still attempt to run the main flow so auth prompts are triggered
     }
 
-    // Run the normal fetch process (will prompt for any missing auth/permissions)
     fetchAndStoreAll();
 }
 

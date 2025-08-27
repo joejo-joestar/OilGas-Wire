@@ -28,8 +28,8 @@ var CONFIG = [
             "oil and gas refinery",
             "oil and gas water and waste water treatment",
             "oil and gas water and waste watersolutions",
-            "oil and gas Chemicals",
-            "oil and gas Liquid mud plant",
+            "oil and gas chemicals",
+            "oil and gas liquid mud plant",
             "oil and gas vessel",
             "opec oil decision"
         ]
@@ -63,15 +63,14 @@ var CONFIG = [
         sheetName: 'Leadership Changes',
         headers: ['Date', 'Headline', 'Industry', 'Company / Individual', 'Region', 'Snippet', 'Source', 'Link'],
         feeds: [
-            'https://www.rigzone.com/news/rss/rigzone_original.aspx',
             'https://www.offshore-technology.com/feed/',
         ],
         googleNewsQueries: [
             "ceo appointed oil and gas",
             "new executive hire oil and gas",
-            "named CEO oil and gas",
-            "appointed CEO oil and gas",
-            "appointed CFO oil and gas",
+            "named ceo oil and gas",
+            "appointed ceo oil and gas",
+            "appointed cfo oil and gas",
             "appointed chairman oil and gas",
             "board appointment oil and gas",
             "executive appointment oil and gas",
@@ -80,15 +79,15 @@ var CONFIG = [
             "ceo resigns oil and gas",
             "ceo steps down oil and gas",
             "joins board oil and gas",
-            "promoted to CEO oil and gas",
+            "promoted to ceo oil and gas",
             "managing director appointed oil and gas",
             "hydrogen industry leadership transition",
-            "appointed CEO hydrogen",
+            "appointed ceo hydrogen",
             "hydrogen executive appointment",
             "hydrogen startup leadership news",
             "water treatment company ceo change",
             "water sector board reshuffle",
-            "appointed CEO water treatment",
+            "appointed ceo water treatment",
             "water treatment executive appointment"
         ],
     },
@@ -104,7 +103,7 @@ var CONFIG = [
             "oil and gas acquisition",
             "oil and gas acquires",
             "oil and gas joint venture",
-            "oil and gas JV",
+            "oil and gas jv",
             "oil and gas buyout"
         ],
     }
