@@ -190,6 +190,36 @@ function inferFieldFromItem(col, item) {
     return '';
 }
 
+/**
+ * Format a numeric monetary amount into a human-readable string for the sheet.
+ * Uses crore/lakh for INR and B/M/k for other currencies.
+ * @param {number} amount
+ * @param {string=} currency (ISO-like: USD, INR, EUR, GBP)
+ * @return {string}
+ */
+function formatMonetaryForSheet(amount, currency) {
+    if (amount === null || typeof amount === 'undefined' || isNaN(amount)) return '';
+    currency = currency || '';
+    // INR: prefer crore/lakh
+    if (currency && currency.toUpperCase() === 'INR') {
+        if (amount >= 1e7) {
+            var cr = Math.round((amount / 1e7) * 100) / 100;
+            return cr + ' crore' + (currency ? ' ' + currency : '');
+        }
+        if (amount >= 1e5) {
+            var lk = Math.round((amount / 1e5) * 100) / 100;
+            return lk + ' lakh' + (currency ? ' ' + currency : '');
+        }
+        if (amount >= 1000) return (Math.round((amount / 1000) * 100) / 100) + 'k' + (currency ? ' ' + currency : '');
+        return Math.round(amount).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',') + (currency ? ' ' + currency : '');
+    }
+    // Default: B / M / k
+    if (amount >= 1e9) return (Math.round((amount / 1e9) * 100) / 100) + 'B' + (currency ? ' ' + currency : '');
+    if (amount >= 1e6) return (Math.round((amount / 1e6) * 100) / 100) + 'M' + (currency ? ' ' + currency : '');
+    if (amount >= 1000) return (Math.round((amount / 1000) * 100) / 100) + 'k' + (currency ? ' ' + currency : '');
+    return Math.round(amount).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',') + (currency ? ' ' + currency : '');
+}
+
 // Build a row matching category headers. Basic mapping; fields not available are left blank.
 /**
  * Build a row array for the provided category definition and item. The category
@@ -230,7 +260,20 @@ function buildRowForCategory(item, cat) {
                 else if (col.indexOf('value') !== -1) val = item.analysis.dealValue || '';
                 else if (col.indexOf('region') !== -1) val = item.analysis.region || '';
                 else if (col.indexOf('commodity') !== -1) val = item.analysis.commodity || '';
-                else if (col.toLowerCase().indexOf('price') !== -1) val = item.analysis.priceInfo || '';
+                else if (col.toLowerCase().indexOf('price') !== -1) {
+                    if (item.analysis) {
+                        var numeric = item.analysis.dealValueNumeric;
+                        var cur = item.analysis.dealValueCurrency || '';
+                        if (typeof numeric === 'number' && !isNaN(numeric)) {
+                            val = formatMonetaryForSheet(numeric, cur);
+                        } else {
+                            // fallback to priceInfo or raw string
+                            val = item.analysis.priceInfo || item.analysis.dealValue || '';
+                        }
+                    } else {
+                        val = '';
+                    }
+                }
             }
             if (!val) val = inferFieldFromItem(col, item);
             row.push(val);

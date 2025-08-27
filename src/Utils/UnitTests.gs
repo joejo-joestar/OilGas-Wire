@@ -80,8 +80,12 @@ function runAllTests() {
         test_identifyIndustry_aliases,
         test_guessCompanyFromText,
         test_normalizeItemHtmlFields,
-        test_parseGoogleTitle
+        test_parseGoogleTitle,
+        test_parseMonetaryValue_and_numeric,
+        test_analyzeItem_numeric_fields
     ];
+    // include noisy-headline test
+    extra.push(test_noisy_real_world_headlines);
     for (var j = 0; j < extra.length; j++) tests.push(extra[j]);
     var failures = [];
     for (var i = 0; i < tests.length; i++) {
@@ -139,5 +143,69 @@ function test_parseGoogleTitle() {
     parseGoogleTitle(it);
     _assertEquals(it.title, 'Headline', 'parseGoogleTitle should split headline');
     _assertEquals(it.source, 'Publisher', 'parseGoogleTitle should extract source when placeholder');
+}
+
+function test_value_parsing_formats() {
+    var samples = [
+        { text: 'The deal was worth US$1,200 million, announced today', expect: 'US$1,200 million' },
+        { text: 'Company agreed $1.2bn in financing.', expect: '$1.2bn' },
+        { text: 'An investment of Rs 5,00,000 was made', expect: 'Rs 5,00,000' },
+        { text: 'A Rs. 12 crore project', expect: 'Rs. 12 crore' },
+        { text: 'They signed for 50 lakh rupees', expect: '50 lakh' },
+        { text: 'EUR 500,000;', expect: 'EUR 500,000' },
+        { text: '(US$1.2bn)', expect: 'US$1.2bn' },
+        { text: 'approx 1,200,000', expect: '1,200,000' },
+        { text: 'value: 1.5 million.', expect: '1.5 million' },
+        { text: 'the price was $500,000,', expect: '$500,000' }
+    ];
+    for (var i = 0; i < samples.length; i++) {
+        var s = samples[i];
+        var out = analyzeItem({ title: s.text, summary: '', content: '' }).dealValue || '';
+        _assertEquals(out, s.expect, 'value parsing for: ' + s.text);
+    }
+}
+
+function test_noisy_real_world_headlines() {
+    var headlines = [
+        { h: 'BP to buy rival for $3.5bn as oil prices surge', v: '$3.5bn' },
+        { h: 'Reliance signs MoU for 2 lakh tonne LPG plant worth Rs 120 crore', v: 'Rs 120 crore' },
+        { h: 'Shell reports Q2 profit of €500,000; shares up', v: '€500,000' },
+        { h: 'Company X raises $1,200,000 in Series A (approx.)', v: '$1,200,000' },
+        { h: 'Govt approves ₹5,00,000 funding for rural water projects', v: '₹5,00,000' },
+        { h: 'Deal reportedly ~ $750k — details TBC', v: '$750k' },
+        { h: 'Acme Corp signs contract worth 25 crore rupees', v: '25 crore' },
+        { h: 'Minority stake sold for USD 2.2 million.', v: 'USD 2.2 million' },
+        { h: 'Oil price update: Brent $78.45/bbl', v: '$78.45' },
+        { h: 'JV created in a $500,000,000 deal', v: '$500,000,000' }
+    ];
+    for (var i = 0; i < headlines.length; i++) {
+        var out = analyzeItem({ title: headlines[i].h, summary: '', content: '' }).dealValue || '';
+        _assertEquals(out, headlines[i].v, 'noisy headline value parse: ' + headlines[i].h);
+    }
+}
+
+function test_parseMonetaryValue_and_numeric() {
+    var samples = [
+        { raw: '$1.4 billion', expectAmount: 1400000000, expectCurrency: 'USD' },
+        { raw: 'Rs 120 crore', expectAmount: 120 * 1e7, expectCurrency: 'INR' },
+        { raw: '₹5,00,000', expectAmount: 500000, expectCurrency: 'INR' },
+        { raw: 'EUR 500,000', expectAmount: 500000, expectCurrency: 'EUR' },
+        { raw: '25 crore', expectAmount: 25 * 1e7, expectCurrency: null }
+    ];
+    for (var i = 0; i < samples.length; i++) {
+        var s = samples[i];
+        var p = parseMonetaryValue(s.raw);
+        _assert(p && typeof p.amount === 'number', 'parsed amount for ' + s.raw);
+        _assertEquals(p.amount, s.expectAmount, 'amount for ' + s.raw);
+        _assertEquals(p.currency || null, s.expectCurrency || null, 'currency for ' + s.raw);
+    }
+}
+
+function test_analyzeItem_numeric_fields() {
+    var it = { title: 'Market to hit $1.4 billion by 2031', summary: '', content: '' };
+    var a = analyzeItem(it);
+    _assertEquals(a.dealValueRaw, '$1.4 billion', 'dealValueRaw should be set');
+    _assertEquals(a.dealValueCurrency, 'USD', 'dealValueCurrency should be USD');
+    _assertEquals(a.dealValueNumeric, 1400000000, 'dealValueNumeric should be numeric 1.4e9');
 }
 
