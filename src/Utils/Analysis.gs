@@ -251,14 +251,14 @@ function analyzeItem(item) {
             var look = text.substr(pos + cand.length, 12);
             var attach = null;
             if (look) {
-                // capture common suffix words or short letter suffixes
-                var am = look.match(/^[\s\.,:\-]*((?:bn|b\.?n\.?|billion|mm|m|million|k|thousand|crore|cr|lakh|lac|lacs|lakhs|[bBkKmM]{1,2}))\b/i);
-                if (am && am[1]) attach = am[1];
-                else {
-                    // also accept single-letter attached suffixes only when not
-                    // followed by other letters (avoid matching start of words like "Brent").
-                    var am2 = look.match(/^[\s\.,:\-]*([bBkKmM]{1,2})(?![a-zA-Z])/);
-                    if (am2 && am2[1]) attach = am2[1];
+                // Prefer immediate attached short suffixes (no space): e.g. "$5.6B"
+                var amImmediate = look.match(/^([bBkKmM]{1,2})(?![a-zA-Z])/);
+                if (amImmediate && amImmediate[1]) {
+                    attach = amImmediate[1];
+                } else {
+                    // Allow spaced suffix words only for known scale words (bn, billion, mm, million, k, thousand, crore, lakh)
+                    var am = look.match(/^[\s\.,:\-]*(?:(bn|b\.?n\.?|billion|mm|m|million|k|thousand|crore|cr|lakh|lac|lacs|lakhs))\b/i);
+                    if (am && am[1]) attach = am[1];
                 }
             }
             if (attach) {
@@ -429,11 +429,11 @@ function debugMonetaryExtraction(text) {
         var look = text.substr(idx + token.length, 12);
         var attach = null;
         if (look) {
-            var am = look.match(/^[\s\.,:\-]*((?:bn|b\.?n\.?|billion|mm|m|million|k|thousand|crore|cr|lakh|lac|lacs|lakhs|[bBkKmM]{1,2}))\b/i);
-            if (am && am[1]) attach = am[1];
+            var amImmediate = look.match(/^([bBkKmM]{1,2})(?![a-zA-Z])/);
+            if (amImmediate && amImmediate[1]) attach = amImmediate[1];
             else {
-                var am2 = look.match(/^[\s\.,:\-]*([bBkKmM]{1,2})(?![a-zA-Z])/);
-                if (am2 && am2[1]) attach = am2[1];
+                var am = look.match(/^[\s\.,:\-]*(?:(bn|b\.?n\.?|billion|mm|m|million|k|thousand|crore|cr|lakh|lac|lacs|lakhs))\b/i);
+                if (am && am[1]) attach = am[1];
             }
         }
         var extended = token;
