@@ -1,3 +1,14 @@
+/**
+ * SheetUtils.gs
+ * Utilities for reading/writing Google Sheets: managing SHEET_ID, ensuring
+ * headers, sorting, deduplication key extraction, and building rows for
+ * categories.
+ */
+
+/**
+ * Read SHEET_ID from Project Script Properties. Throws if missing.
+ * @return {string}
+ */
 function getSheetId() {
     var id = PropertiesService.getScriptProperties().getProperty('SHEET_ID');
     if (!id) {
@@ -6,12 +17,23 @@ function getSheetId() {
     return id;
 }
 
+/**
+ * Persist SHEET_ID into Project Script Properties.
+ * @param {string} id
+ */
 function setSheetId(id) {
     if (!id) throw new Error('setSheetId requires a non-empty id');
     PropertiesService.getScriptProperties().setProperty('SHEET_ID', id);
 }
 
 // Ensure header row exists and matches provided headers
+/**
+ * Ensure the first row of the sheet contains the provided headers. If mismatched,
+ * the sheet is cleared and headers are written.
+ * @param {GoogleAppsScript.Spreadsheet.Sheet} sheet
+ * @param {Array<string>} headers
+ * @return {void}
+ */
 function ensureHeaders(sheet, headers) {
     var firstRow = sheet.getRange(1, 1, 1, sheet.getMaxColumns()).getValues()[0];
     var needRewrite = false;
@@ -34,6 +56,13 @@ function ensureHeaders(sheet, headers) {
 
 // Sort the sheet by the Date column (newest first). Expects headers array so we can
 // determine which column contains the date. If no Date column is present, no-op.
+/**
+ * Sort sheet rows (excluding header) by the first column that contains 'date' in headers.
+ * Newest-first.
+ * @param {GoogleAppsScript.Spreadsheet.Sheet} sheet
+ * @param {Array<string>} headers
+ * @return {void}
+ */
 function sortSheetByDate(sheet, headers) {
     if (!sheet || !headers || headers.length === 0) return;
     // find index of the first header that contains 'date' (case-insensitive)
@@ -63,6 +92,13 @@ function sortSheetByDate(sheet, headers) {
 }
 
 // Read existing link and title keys for deduplication. Assumes link is last column and title is second.
+/**
+ * Read existing link and title keys for deduplication.
+ * Assumes the link is the last header column and title is the 2nd column.
+ * @param {GoogleAppsScript.Spreadsheet.Sheet} sheet
+ * @param {Array<string>} headers
+ * @return {{links: Object.<string,boolean>, titles: Object.<string,boolean>}}
+ */
 function getExistingKeys(sheet, headers) {
     var res = { links: {}, titles: {} };
     var lastRow = sheet.getLastRow();
@@ -82,10 +118,22 @@ function getExistingKeys(sheet, headers) {
     return res;
 }
 
+/**
+ * Normalize a title string for deduplication (lowercase, remove punctuation).
+ * @param {string} t
+ * @return {string}
+ */
 function normalizeTitle(t) {
-    return (t || '').toString().trim().toLowerCase().replace(/\s+/g, ' ').replace(/["'’`\-–—:;,.()]/g, '');
+    // Remove punctuation first, then collapse whitespace so tokens like em-dashes
+    // don't leave double spaces after removal.
+    return (t || '').toString().trim().toLowerCase().replace(/["'’`\-–—:;,.()]/g, '').replace(/\s+/g, ' ');
 }
 
+/**
+ * Extract a four-digit year from item.pubDate or parsed Date.
+ * @param {FeedItem|Object} item
+ * @return {number|null}
+ */
 function getItemYear(item) {
     if (!item) return null;
     var dateStr = item.pubDate || item.pubdate || item.updated || item.published || '';
@@ -106,6 +154,12 @@ function getItemYear(item) {
 
 // Infer fields for unknown columns using lightweight heuristics. Kept here because it is
 // used by row-building and relates to sheet population logic.
+/**
+ * Heuristic to infer a column value for unknown columns from item text.
+ * @param {string} col Lowercased column name
+ * @param {FeedItem} item
+ * @return {string}
+ */
 function inferFieldFromItem(col, item) {
     var text = ((item.title || '') + ' ' + (item.summary || '')).toLowerCase();
     if (col.indexOf('company') !== -1 || col.indexOf('companies') !== -1) {
@@ -137,6 +191,13 @@ function inferFieldFromItem(col, item) {
 }
 
 // Build a row matching category headers. Basic mapping; fields not available are left blank.
+/**
+ * Build a row array for the provided category definition and item. The category
+ * is expected to provide a `headers` array describing columns.
+ * @param {FeedItem} item
+ * @param {CategoryConfig} cat
+ * @return {Array} row values
+ */
 function buildRowForCategory(item, cat) {
     var h = cat.headers;
     var row = [];

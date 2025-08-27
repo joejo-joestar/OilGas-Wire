@@ -6,6 +6,11 @@
  */
 
 
+/**
+ * Entry point: fetch all configured categories and store new items in the sheet.
+ * Iterates `CONFIG` and calls `fetchCategory` for each category.
+ * @return {void}
+ */
 function fetchAndStoreAll() {
     var sheetId = getSheetId();
 
@@ -18,6 +23,12 @@ function fetchAndStoreAll() {
     });
 }
 
+/**
+ * Fetch and store items for a single category.
+ * @param {CategoryConfig} cat Category config object (feeds, headers, queries, sheetName).
+ * @param {string=} sheetId Optional spreadsheet id to use instead of Project property.
+ * @return {void}
+ */
 function fetchCategory(cat, sheetId) {
     var idToUse = sheetId || SHEET_ID || getSheetId();
     var ss = SpreadsheetApp.openById(idToUse);
@@ -34,7 +45,7 @@ function fetchCategory(cat, sheetId) {
     if (cat.googleNewsQueries && cat.googleNewsQueries.length) {
         cat.googleNewsQueries.forEach(function (q) {
             var encoded = encodeURIComponent(q);
-            feedUrls.push('https://news.google.com/rss/search?q=' + encoded + '&hl=en-US&gl=US&ceid=US:en');
+            feedUrls.push('https://news.google.com/rss/search?q=' + encoded + '&hl=en-US&ceid=US:en');
         });
     }
 

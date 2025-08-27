@@ -1,4 +1,63 @@
+/**
+ * @file Config.gs
+ * Top-level configuration used by the feed fetcher and sheet writer.
+ *
+ * Purpose:
+ * - `CONFIG` defines categories (tabs), their headers, and the feed URLs and
+ *   Google News query seeds to collect items for each category.
+ * - The other exported variables (e.g. `FETCH_OPTIONS`, `KNOWN_COMPANIES`,
+ *   `REGION_CANONICALS`, `COMMODITIES`, `INDUSTRIES`, `INDUSTRY_ALIASES`)
+ *   provide tunable heuristics for content analysis, classification, and
+ *   de-duplication used throughout the helpers in `src/Utils`.
+ *
+ * Editing guidance:
+ * - To add/remove a feed or category, update the `CONFIG` array while
+ *   preserving its objects' shape: {category, sheetName, headers, feeds, googleNewsQueries}.
+ * - Change fuzzy thresholds or snippet length via `FUZZY_THRESHOLD` and
+ *   `ARTICLE_SNIPPET_MAX`.
+ */
+
+/**
+ * Spreadsheet ID to use. If null, the script property `SHEET_ID` will be used.
+ * Set this to a specific Google Sheet ID string to avoid needing to set the
+ * script property. Example: '1AbCdeFGhIJKlmNoPqRstUVwXyZ1234567890abcdefg'
+ */
+
 var SHEET_ID = null;
+
+/**
+ * @typedef {Object} FeedItem
+ * @property {string} title
+ * @property {string} link
+ * @property {string|Date} pubDate
+ * @property {string} summary
+ * @property {string} content
+ * @property {string} source
+ * @property {string} feedUrl
+ * @property {FeedAnalysis=} analysis  Optional richer analysis produced by `analyzeItem()`
+ */
+
+/**
+ * @typedef {Object} FeedAnalysis
+ * @property {string} company
+ * @property {string} dealType
+ * @property {string} dealValue
+ * @property {string} region
+ * @property {string} commodity
+ * @property {string} industry
+ * @property {string} priceInfo
+ */
+
+/**
+ * @typedef {Object} CategoryConfig
+ * @property {string} category
+ * @property {string} sheetName
+ * @property {Array<string>} headers
+ * @property {Array<string>} feeds
+ * @property {Array<string>=} googleNewsQueries
+ * @property {Array<string>=} queries  Optional alternate queries array used by matching logic
+ */
+
 /**
  * Configuration for categories, their associated RSS/Atom feeds, and sheet headers.
  * Each category will be a separate tab in the configured Google Sheet.
@@ -143,8 +202,13 @@ var KNOWN_REGIONS = [
     'Ukraine', 'Russia', 'Europe', 'Mediterranean', 'Caspian', 'Kazakhstan', 'Azerbaijan', 'Turkmenistan', 'Russia', 'Siberia', 'Australia', 'New Zealand'
 ];
 
-// Map common region name variants to a standardized canonical name/code.
 var REGION_CANONICALS = {
+    'middle east': 'Middle East', 'me': 'Middle East', 'mena': 'Middle East',
+    'gulf': 'Gulf', 'gcc': 'GCC',
+    'europe': 'Europe',
+    'asia': 'Asia',
+    'india': 'India',
+    'africa': 'Africa',
     'usa': 'USA', 'us': 'USA', 'u.s.': 'USA', 'united states': 'USA', 'united states of america': 'USA', 'america': 'USA',
     'uk': 'UK', 'united kingdom': 'UK', 'great britain': 'UK', 'britain': 'UK',
     'uae': 'UAE', 'united arab emirates': 'UAE',
@@ -156,16 +220,12 @@ var REGION_CANONICALS = {
     'iran': 'Iran', 'islamic republic of iran': 'Iran',
     'iraq': 'Iraq', 'republic of iraq': 'Iraq',
     'australia': 'Australia', 'new zealand': 'New Zealand',
-    'africa': 'Africa',
 };
 
 var COMMODITIES = ["Oil", "Gas", "LNG", "Steel", "Pipe", "Chemical", "Valve", "Flange", "Diesel"];
 
 var INDUSTRIES = ['Oil & Gas', 'Hydrogen', 'Water Treatment'];
 
-// Editable alias map for industries. Keys should match the canonical values in INDUSTRIES
-// (case-insensitive). Each key maps to an array of tokens/phrases that should be
-// recognized in headlines/snippets to classify that industry.
 var INDUSTRY_ALIASES = {
     'oil & gas': ['oil', 'gas', 'petrol', 'petroleum', 'crude', 'upstream', 'midstream', 'downstream', 'refinery', 'rig', 'drill', 'well', 'platform'],
     'hydrogen': ['hydrogen', 'h2', 'fuel cell', 'green hydrogen', 'blue hydrogen'],

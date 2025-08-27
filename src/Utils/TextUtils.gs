@@ -1,11 +1,25 @@
-// TextUtils.gs
-// Small helpers for string normalization, HTML cleaning and Google News link/title handling.
+/**
+ * TextUtils.gs
+ * Small helpers for string normalization, HTML cleaning, Google News link/title
+ * handling, and simple utility functions for truncation and similarity.
+ */
 
+/**
+ * Normalize a string for fuzzy comparisons: lowercase and remove non-alphanumerics.
+ * @param {string} s
+ * @return {string}
+ */
 function normalizeForFuzzy(s) {
     if (!s) return '';
     return s.toString().toLowerCase().replace(/[^a-z0-9]+/g, '');
 }
 
+/**
+ * Compute Levenshtein distance between two strings.
+ * @param {string} a
+ * @param {string} b
+ * @return {number}
+ */
 function levenshtein(a, b) {
     a = a || '';
     b = b || '';
@@ -24,6 +38,12 @@ function levenshtein(a, b) {
     return dp[m][n];
 }
 
+/**
+ * Return normalized similarity (0..1) based on Levenshtein distance.
+ * @param {string} a
+ * @param {string} b
+ * @return {number}
+ */
 function similarity(a, b) {
     if (!a && !b) return 1;
     if (!a || !b) return 0;
@@ -34,10 +54,21 @@ function similarity(a, b) {
     return 1 - (d / max);
 }
 
+/**
+ * Escape a string for safe use in RegExp.
+ * @param {string} s
+ * @return {string}
+ */
 function escapeRegExp(s) {
     return (s || '').toString().replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
+/**
+ * Clean HTML-like fields from a parsed feed item and return a normalized object
+ * with keys: title, summary, content, source, link, pubDate, feedUrl.
+ * @param {FeedItem|Object} item
+ * @return {FeedItem}
+ */
 function normalizeItemHtmlFields(item) {
     if (!item || typeof item !== 'object') return item;
 
@@ -73,6 +104,12 @@ function normalizeItemHtmlFields(item) {
     return out;
 }
 
+/**
+ * Truncate text to a maximum length and append an ellipsis if truncated.
+ * @param {string} s
+ * @param {number=} maxLen
+ * @return {string}
+ */
 function truncateText(s, maxLen) {
     if (!s) return '';
     maxLen = maxLen || ARTICLE_SNIPPET_MAX;
@@ -81,11 +118,22 @@ function truncateText(s, maxLen) {
     return str.substring(0, maxLen - 1).trim() + '\u2026';
 }
 
+/**
+ * Compact whitespace in a headline and trim.
+ * @param {string} h
+ * @return {string}
+ */
 function humanizeHeadline(h) {
     if (!h) return '';
     return h.replace(/\s+/g, ' ').trim();
 }
 
+/**
+ * If given a Google News redirect url, extract the underlying 'url' param.
+ * Otherwise return the input.
+ * @param {string} link
+ * @return {string}
+ */
 function resolveGoogleNewsLink(link) {
     if (!link) return '';
     try {
@@ -97,6 +145,12 @@ function resolveGoogleNewsLink(link) {
     }
 }
 
+/**
+ * For Google News style titles of the form "Headline - Source", split out the
+ * source into item.source and clean item.title in-place.
+ * @param {FeedItem} item
+ * @return {void}
+ */
 function parseGoogleTitle(item) {
     if (!item || !item.title) return;
     var t = item.title.toString();

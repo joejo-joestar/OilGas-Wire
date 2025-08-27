@@ -1,4 +1,11 @@
-// Parse RSS or Atom XML and return array of items {title, link, pubDate, summary, content, source}
+/**
+ * FeedUtils.gs
+ * Feed parsing helpers. Accepts RSS/Atom XML or HTML (with discovery links)
+ * and returns normalized item objects suitable for analysis and sheet rows.
+ * @param {string} xmlText Response body (may be HTML)
+ * @param {string} feedUrl The requested feed URL (used for discovery heuristics)
+ * @return {Array<FeedItem>} items
+ */
 function parseFeed(xmlText, feedUrl) {
     var items = [];
 
