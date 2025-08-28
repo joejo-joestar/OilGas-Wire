@@ -6,11 +6,6 @@
         "userSymbol": "Gmail",
         "version": "v1",
         "serviceId": "gmail"
-      },
-      {
-        "userSymbol": "Drive",
-        "version": "v3",
-        "serviceId": "drive"
       }
     ]
   },

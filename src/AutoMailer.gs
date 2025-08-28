@@ -124,6 +124,12 @@ function buildVisibleSectionsForDate(dateStr) {
  * Web app GET handler — renders the previous day's newsletter HTML.
  */
 function doGet(e) {
+    // If preview UI requested, serve the small preview page (date picker + preview area)
+    var isPreview = e && e.parameter && (e.parameter.preview === '1' || e.parameter.preview === 'true');
+    if (isPreview) {
+        return HtmlService.createHtmlOutputFromFile('WebPreview').setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
+    }
+
     var dateParam = (e && e.parameter && e.parameter.date) ? e.parameter.date : null;
     var sections = [];
     try { sections = buildVisibleSectionsForDate(dateParam); } catch (err) {
@@ -134,6 +140,21 @@ function doGet(e) {
     var drText = Utilities.formatDate(new Date(targetDate), Session.getScriptTimeZone() || 'UTC', 'MMM d, yyyy');
     var html = renderNewsletterHtml({ sections: sections, dateRangeText: drText });
     return HtmlService.createHtmlOutput(html).setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
+}
+
+/**
+ * Returns rendered newsletter HTML for the given date (yyyy-MM-dd). Used by the preview UI.
+ */
+function getNewsletterHtml(dateStr) {
+    var sections = buildVisibleSectionsForDate(dateStr);
+    var dateObj = null;
+    if (dateStr) {
+        var parts = dateStr.toString().split('-');
+        if (parts.length === 3) dateObj = new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]));
+    }
+    if (!dateObj) dateObj = new Date(new Date().getTime() - 24 * 60 * 60 * 1000);
+    var drText = Utilities.formatDate(dateObj, Session.getScriptTimeZone() || 'UTC', 'MMM d, yyyy');
+    return renderNewsletterHtml({ sections: sections, dateRangeText: drText });
 }
 
 /**
