@@ -130,9 +130,7 @@ var CONFIG = [
         category: 'Mergers, Acquisitions, and Joint Ventures',
         sheetName: 'Mergers, Acquisitions, and Joint Ventures',
         headers: ['Date', 'Headline', 'Companies', 'Region', 'Article', 'Source', 'Link'],
-        feeds: [
-            'https://www.ft.com/?format=rss',
-        ],
+        feeds: [],
         googleNewsQueries: [
             "oil and gas merger",
             "oil and gas acquisition",
