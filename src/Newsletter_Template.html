@@ -43,7 +43,7 @@
 
         .header p {
             margin: 6px 0 0;
-            font-size: 13px;
+            font-size: 12px;
             opacity: 0.95;
         }
 
@@ -53,7 +53,7 @@
 
         .intro {
             color: #333;
-            font-size: 14px;
+            font-size: 12px;
             margin-bottom: 12px;
         }
 
@@ -73,7 +73,7 @@
         }
 
         .headline {
-            font-size: 15px;
+            font-size: 14px;
             font-weight: 600;
             color: #0a164e;
             margin: 0 0 6px;
@@ -81,20 +81,14 @@
         }
 
         .headline:hover {
-            color: #0b56c8;
-            text-decoration: underline;
+            color: #0b56c8 !important;
+            text-decoration: underline !important;
         }
 
         .meta {
             font-size: 12px;
             color: #6b7280;
             margin-bottom: 8px;
-        }
-
-        .snippet {
-            font-size: 13px;
-            color: #222;
-            margin: 0;
         }
 
         .footer {
@@ -171,7 +165,7 @@
             </p>
             <? if (sections && sections.length) { ?>
             <? for (var s = 0; s < sections.length; s++) { var sec = sections[s]; ?>
-            <h2 style="font-size:16px;margin:14px 0 8px;">
+            <h2 style="font-size:16px; margin:14px 0 8px;">
                 <?= sec.title ?>
                 <? if (sec.more && sec.more > 0) { ?>
                 <small style="font-size:12px; margin-left:8px;">
@@ -186,7 +180,8 @@
                 <? for (var i = 0; i < sec.items.length; i++) { var it = sec.items[i]; ?>
                 <li class="item">
                     <div>
-                        <a class="headline" href="<?= it.link ?>" target="_blank">
+                        <a class="headline" href="<?= it.link ?>" target="_blank"
+                            style="color:#0a164e; text-decoration:none;">
                             <?= it.headline ?>
                         </a>
                     </div>
@@ -214,7 +209,6 @@
             This newsletter is generated automatically from the <a
                 href="https://docs.google.com/spreadsheets/d/1cS_e0eobYINAMlWCtmlqv4iLLCe_Ou8Z1BPJntzKF1Y/"
                 target="_blank">news sheet</a>.
-
         </div>
     </div>
 </body>
