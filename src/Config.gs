@@ -26,36 +26,12 @@
 var SHEET_ID = null;
 
 /**
- * @typedef {Object} FeedItem
- * @property {string} title
- * @property {string} link
- * @property {string|Date} pubDate
- * @property {string} summary
- * @property {string} content
- * @property {string} source
- * @property {string} feedUrl
- * @property {FeedAnalysis=} analysis  Optional richer analysis produced by `analyzeItem()`
- */
-
-/**
- * @typedef {Object} FeedAnalysis
- * @property {string} company
- * @property {string} dealType
- * @property {string} dealValue
- * @property {string} region
- * @property {string} commodity
- * @property {string} industry
- * @property {string} priceInfo
- */
-
-/**
  * @typedef {Object} CategoryConfig
  * @property {string} category
  * @property {string} sheetName
  * @property {Array<string>} headers
  * @property {Array<string>} feeds
  * @property {Array<string>=} googleNewsQueries
- * @property {Array<string>=} queries  Optional alternate queries array used by matching logic
  */
 
 /**
