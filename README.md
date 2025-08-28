@@ -5,6 +5,11 @@
 </p>
 
 A small Google Apps Script project that aggregates RSS/Atom feeds, filters items (company, region, commodity, industry, price hints), stores results in a Google Sheet, and generates a daily email newsletter with a web preview.
+<p align="center">
+<img src="assets/feed_sheets.png" alt="Feed Sheets" title="Feed Sheets" width="600" >
+<img src="assets/newsletter_full.png" alt="Feed Sheets" title="Feed Sheets" width="600" >
+
+</p>
 
 ---
 
@@ -38,7 +43,11 @@ Oil-and-Gas-Newsletter-and-Feed
 ## ✨ Features
 
 - Daily newsletter email that includes a truncated preview of each section and a link to view the full newsletter.
+![Newsletter Mail](assets/newsletter_mail.png)
+
 - Web preview (Apps Script Web App) with permalink and optional `?date=YYYY-MM-DD` parameter to view historical newsletters.
+![Newsletter Preview](assets/newsletter_preview.png)
+
 - Template HTML (`Newsletter_Template.html`) used for the email body and web preview
 - Intelligent link handling: extracts URLs from `=HYPERLINK()` formulas in the sheet so cells that display 'LINK' still open the real URL.
 - Configurable behavior via script properties (`SEND_TO`, `TEST_RECIPIENT`, `MAX_ITEMS_PER_SECTION`, `WEBAPP_URL`, etc.).
