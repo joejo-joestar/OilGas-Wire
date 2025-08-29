@@ -92,6 +92,15 @@ npm run create-sheets
 
 1. Open the project in the Apps Script editor (<https://script.google.com>) or open the project after `clasp pull`.
 2. In Project Settings → Script properties, set `SHEET_ID`, `TEST_RECIPIENT` (for safe testing), and any other properties (`WEBAPP_URL`, `MAX_ITEMS_PER_SECTION`, etc.).
+
+    ```plaintext
+    SHEET_ID=your-google-sheet-id
+    SEND_TO=alice@example.com,bob@example.com
+    TEST_RECIPIENT=you@example.com
+    MAX_ITEMS_PER_SECTION=6
+    WEBAPP_URL=https://script.google.com/macros/s/XXX/exec?date={date}
+    ```
+
 3. Use the dropdown next to the Run button to select `sendDailyNewsletter` and click Run. The first run will prompt you to authorize scopes.
 4. Check Executions (left sidebar) and Logs for runtime output and debugging.
 
@@ -102,7 +111,8 @@ Follow the steps in the "Deployment (Web App)" section above. After deploying, u
 - Preview: `WEBAPP_URL?preview=1`
 - View a specific date: `WEBAPP_URL?date=YYYY-MM-DD`
 
-Tip: set `WEBAPP_URL` in script properties so the mailer includes a permalink in emails.
+> [!TIP]
+> set `WEBAPP_URL` in script properties so the mailer includes a permalink in emails.
 
 ### Scheduling daily sends
 
