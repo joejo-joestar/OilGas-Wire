@@ -6,6 +6,7 @@
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <title>Daily Oil & Gas Newsletter</title>
     <style>
+        /* Base / layout */
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
             color: #111;
@@ -17,15 +18,22 @@
         .wrapper {
             max-width: 720px;
             margin: 24px auto;
-            background: #fff;
+            background: transparent;
+            overflow: visible;
+            padding: 0 12px;
+        }
+
+        .card-inner {
+            background: #ffffff;
+            border-radius: 12px;
             overflow: hidden;
-            box-shadow: 0 5px 18px rgba(22, 30, 60, 0.08);
+            box-shadow: 0 6px 20px rgba(10, 22, 78, 0.06);
         }
 
         .header {
             background: #0a164e;
             color: #fff;
-            padding: 18px 24px;
+            padding: 18px 20px;
         }
 
         .header img {
@@ -53,10 +61,40 @@
 
         .intro {
             color: #333;
-            font-size: 12px;
+            font-size: 13px;
             margin-bottom: 12px;
         }
 
+        /* Section card */
+        .section-card {
+            background: #fbfdff;
+            border: 1px solid #eef3ff;
+            border-radius: 10px;
+            padding: 12px;
+            margin: 14px 0;
+            box-shadow: 0 6px 18px rgba(10, 22, 78, 0.04);
+        }
+
+        .section-header {
+            padding: 6px 6px 12px 6px;
+            border-bottom: 1px solid #eef3ff;
+            margin-bottom: 10px;
+        }
+
+        .section-header h2 {
+            margin: 0;
+            font-size: 16px;
+            color: #0a164e;
+            font-weight: 600;
+        }
+
+        .section-header small a {
+            color: #0a164e;
+            font-size: 12px;
+            margin-left: 8px;
+        }
+
+        /* Items list inside a section */
         .items {
             list-style: none;
             padding: 0;
@@ -64,12 +102,11 @@
         }
 
         .item {
-            padding: 12px 0;
-            border-bottom: 1px solid #f0f2f7;
-        }
-
-        .item:last-child {
-            border-bottom: none;
+            padding: 10px;
+            margin: 8px 0;
+            border-radius: 8px;
+            background: #ffffff;
+            border: 1px solid #eef2f7;
         }
 
         .headline {
@@ -78,6 +115,7 @@
             color: #0a164e;
             margin: 0 0 6px;
             text-decoration: none;
+            display: inline-block;
         }
 
         .headline:hover {
@@ -88,7 +126,6 @@
         .meta {
             font-size: 12px;
             color: #6b7280;
-            margin-bottom: 8px;
         }
 
         .footer {
@@ -105,16 +142,6 @@
             padding: 10px 16px;
             border-radius: 6px;
             text-decoration: none;
-            font-weight: 600;
-        }
-
-        .cta:hover {
-            display: inline-block;
-            background: #0a164ecc;
-            color: #fff !important;
-            padding: 10px 16px;
-            border-radius: 6px;
-            text-decoration: underline;
             font-weight: 600;
         }
 
@@ -139,11 +166,20 @@
 
         @media (max-width:540px) {
             .wrapper {
-                margin: 12px;
+                margin: 12px auto;
+                padding: 0 8px;
             }
 
             .header h1 {
                 font-size: 18px;
+            }
+
+            .section-header h2 {
+                font-size: 15px;
+            }
+
+            .headline {
+                font-size: 14px;
             }
         }
     </style>
@@ -151,64 +187,70 @@
 
 <body>
     <div class="wrapper">
-        <div class="header">
-            <img src="https://alshirawi.com/wp-content/uploads/2022/02/Al-Shirawi-Equipment-Co_White-Logo-01.png"
-                alt="Logo">
-            <h1>Daily Oil & Gas Newsletter</h1>
-            <p>
-                <?= dateRangeText ?>
-            </p>
-        </div>
-        <div class="content">
-            <p class="intro">
-                Click a headline to read the original article.
-            </p>
-            <? if (sections && sections.length) { ?>
-            <? for (var s = 0; s < sections.length; s++) { var sec = sections[s]; ?>
-            <h2 style="font-size:16px; margin:14px 0 8px;">
-                <?= sec.title ?>
-                <? if (sec.more && sec.more > 0) { ?>
-                <small style="font-size:12px; margin-left:8px;">
-                    <a href="<?= fullNewsletterUrl ?>">(+
-                        <?= sec.more ?> more)
-                    </a>
-                </small>
-                <? } ?>
-            </h2>
-            <? if (sec.items && sec.items.length) { ?>
-            <ul class="items">
-                <? for (var i = 0; i < sec.items.length; i++) { var it = sec.items[i]; ?>
-                <li class="item">
-                    <div>
-                        <a class="headline" href="<?= it.link ?>" target="_blank"
-                            style="color:#0a164e; text-decoration:none;">
-                            <?= it.headline ?>
-                        </a>
-                    </div>
-                    <div class="meta">
-                        <?= it.source ?> •
-                        <?= it.pubDateStr ?>
-                    </div>
-                </li>
-                <? } ?>
-            </ul>
-            <? } else { ?>
-            <p style="margin:8px 0 16px;color:#666;">No items in this section for the selected period.</p>
-            <? } ?>
-            <? } ?>
-            <? } else { ?>
-            <p>No items found for this period.</p>
-            <? } ?>
-        </div>
-        <div class="footer">
-            <? if (fullNewsletterUrl) { ?>
-            <div style="margin-bottom:12px;text-align:center;">
-                <a class="cta" href="<?= fullNewsletterUrl ?>" target="_blank" role="button">View full newsletter</a>
+        <div class="card-inner">
+            <div class="header">
+                <img src="https://alshirawi.com/wp-content/uploads/2022/02/Al-Shirawi-Equipment-Co_White-Logo-01.png"
+                    alt="Logo">
+                <h1>Daily Oil & Gas Newsletter</h1>
+                <p>
+                    <?= dateRangeText ?>
+                </p>
             </div>
-            <? } ?>
-            This newsletter is generated automatically from the <a
-                href="https://docs.google.com/spreadsheets/d/1cS_e0eobYINAMlWCtmlqv4iLLCe_Ou8Z1BPJntzKF1Y/"
-                target="_blank">news sheet</a>.
+            <div class="content">
+                <p class="intro">
+                    Click a headline to read the original article.
+                </p>
+                <? if (sections && sections.length) { ?>
+                <? for (var s = 0; s < sections.length; s++) { var sec = sections[s]; ?>
+                <div class="section-card">
+                    <div class="section-header">
+                        <h2>
+                            <?= sec.title ?>
+                            <? if (sec.more && sec.more > 0) { ?>
+                            <small>
+                                <a href="<?= fullNewsletterUrl ?>">(+
+                                    <?= sec.more ?> more)
+                                </a>
+                            </small>
+                            <? } ?>
+                        </h2>
+                    </div>
+                    <? if (sec.items && sec.items.length) { ?>
+                    <ul class="items">
+                        <? for (var i = 0; i < sec.items.length; i++) { var it = sec.items[i]; ?>
+                        <li class="item">
+                            <div>
+                                <a class="headline" href="<?= it.link ?>" target="_blank">
+                                    <?= it.headline ?>
+                                </a>
+                            </div>
+                            <div class="meta">
+                                <?= it.source ?> •
+                                <?= it.pubDateStr ?>
+                            </div>
+                        </li>
+                        <? } ?>
+                    </ul>
+                    <? } else { ?>
+                    <p style="margin:8px 0 16px;color:#666;">No items in this section for the selected period.</p>
+                    <? } ?>
+                </div>
+                <? } ?>
+                <? } else { ?>
+                <p>No items found for this period.</p>
+                <? } ?>
+            </div>
+            <div class="footer">
+                <? if (fullNewsletterUrl) { ?>
+                <div style="margin-bottom:12px;text-align:center;">
+                    <a class="cta" href="<?= fullNewsletterUrl ?>" target="_blank" role="button">View full
+                        newsletter</a>
+                </div>
+                <? } ?>
+                This newsletter is generated automatically from the <a
+                    href="https://docs.google.com/spreadsheets/d/1cS_e0eobYINAMlWCtmlqv4iLLCe_Ou8Z1BPJntzKF1Y/"
+                    target="_blank">news sheet</a>.
+            </div>
         </div>
     </div>
 </body>
