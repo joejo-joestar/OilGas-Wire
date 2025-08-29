@@ -13,14 +13,22 @@
             margin: 0;
             padding: 0;
             background: #f6f7fb;
+            /* Prevent some mobile clients from auto-scaling text */
+            -webkit-text-size-adjust: 100%;
+            -ms-text-size-adjust: 100%;
+            text-size-adjust: 100%;
         }
 
+        /* Make the wrapper fluid by default but keep a sensible max-width for large screens */
         .wrapper {
+            width: 100%;
             max-width: 720px;
+            /* desktop default */
             margin: 24px auto;
             background: transparent;
             overflow: visible;
             padding: 0 12px;
+            box-sizing: border-box;
         }
 
         .card-inner {
@@ -115,7 +123,10 @@
             color: #0a164e;
             margin: 0 0 6px;
             text-decoration: none;
-            display: inline-block;
+            display: block;
+            /* ensure occupies its own line and avoids inline scaling issues */
+            line-height: 1.25;
+            /* improves perceived size and spacing on small screens */
         }
 
         .headline:hover {
@@ -164,22 +175,83 @@
             text-decoration: underline;
         }
 
-        @media (max-width:540px) {
+        /* Mobile: allow full width (remove max-width constraint) and tighten padding */
+        @media screen and (max-width: 540px) {
             .wrapper {
-                margin: 12px auto;
-                padding: 0 8px;
-            }
-
-            .header h1 {
-                font-size: 18px;
-            }
-
-            .section-header h2 {
-                font-size: 15px;
+                max-width: none;
+                width: 100%;
+                margin: 6px auto !important;
+                padding: 0 8px !important;
             }
 
             .headline {
-                font-size: 14px;
+                font-size: 16px !important;
+                line-height: 1.25 !important;
+            }
+
+            .meta {
+                font-size: 12px !important;
+            }
+
+            .content {
+                padding: 12px 10px;
+            }
+        }
+
+        /* Tablet / small-desktop: slightly wider layout and spacing */
+        @media screen and (min-width: 541px) and (max-width: 899px) {
+            .wrapper {
+                max-width: 900px;
+                padding: 0 20px;
+                margin: 20px auto;
+            }
+
+            .content {
+                padding: 20px 24px;
+            }
+
+            .header h1 {
+                font-size: 22px;
+            }
+
+            .section-header h2 {
+                font-size: 17px;
+            }
+
+            .headline {
+                font-size: 15px;
+            }
+        }
+
+        /* Large desktop: increase max-width and spacing for readability */
+        @media screen and (min-width: 900px) {
+            .wrapper {
+                max-width: 1100px;
+                padding: 0 24px;
+            }
+
+            .card-inner {
+                border-radius: 14px;
+            }
+
+            .header img {
+                max-width: 180px;
+            }
+
+            .header h1 {
+                font-size: 24px;
+            }
+
+            .section-header h2 {
+                font-size: 20px;
+            }
+
+            .headline {
+                font-size: 16px;
+            }
+
+            .content {
+                padding: 24px 32px;
             }
         }
     </style>
@@ -191,7 +263,7 @@
             <div class="header">
                 <img src="https://alshirawi.com/wp-content/uploads/2022/02/Al-Shirawi-Equipment-Co_White-Logo-01.png"
                     alt="Logo">
-                <h1>Daily Oil & Gas Newsletter</h1>
+                <h1>Bussiness Excellence Newsletter</h1>
                 <p>
                     <?= dateRangeText ?>
                 </p>
