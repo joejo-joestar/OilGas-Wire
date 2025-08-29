@@ -1,10 +1,11 @@
-<h1 align="center">📧 Automated Newsletter & 📰 RSS Feed</h1>
+<h1 align="center">🛢️ OilGas-Wire</h1>
 
 <p align="center">
   <img src="assets/pixpagercar.png" alt="Feed Car" title="Feed Car" width="128">
 </p>
 
 A small Google Apps Script project that aggregates RSS/Atom feeds, filters items (company, region, commodity, industry, price hints), stores results in a Google Sheet, and generates a daily email newsletter with a web preview.
+
 <p align="center">
 <img src="assets/feed_sheets.png" alt="Feed Sheets" title="Feed Sheets" width="600" >
 <img src="assets/newsletter_full.png" alt="Feed Sheets" title="Feed Sheets" width="600" >
