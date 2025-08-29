@@ -14,7 +14,115 @@ A simple Google Apps Script project that aggregates RSS/Atom feeds, filters item
 
 ---
 
-## 🗂️ Project Structure
+## 👷‍♂️ How it works
+
+1. Feeds are aggregated and stored in different sheet tabs as configured in [`Config.gs`](src/Config.gs). Each sheet should have a header row with recognizable column names like `date`, `headline`/`title`, `link`, `source`, `snippet`.
+2. `sendDailyNewsletter()` reads the sheet rows for the target date (previous day by default), builds sections, renders [`Newsletter_Template.html`](src/Newsletter_Template.html), and sends a truncated HTML email.
+3. A separate `doGet(e)` web handler renders the full newsletter for the requested date (defaults to previous day). Deploy this as a Web App to get a stable permalink.
+
+---
+
+## ⚙️ Configuration (Script Properties)
+
+Set these in the Apps Script project (Project Settings → Script properties) or via the script:
+
+- `SHEET_ID`: ID of the Google Sheet containing feed data (required)
+- `SEND_TO`: comma-separated list of recipient emails (required unless `TEST_RECIPIENT` is set)
+- `TEST_RECIPIENT`: when set, overrides `SEND_TO` and sends only to this address (useful for testing)
+- `MAX_ITEMS_PER_SECTION`: number of items to include in the email preview (default 6)
+- `WEBAPP_URL`: optional: set to your deployed webapp permalink. The mailer will append or substitute the date parameter (supports `{date}` placeholder). Example: `https://script.google.com/macros/s/XXX/exec` or `https://.../exec?d={date}`
+
+> [!NOTE]
+> By default the mailer uses the webapp URL (if set) as the "full newsletter" link in the email. If not set, no link is included.
+
+---
+
+## 🚀 Deployment (Web App)
+
+1. Open the project in the Apps Script editor.
+2. Deploy → New deployment → Select "Web app".
+3. Set "Execute as" to `Me` and "Who has access" to `Anyone` or `Anyone with the link` (if you want viewers to open without signing in).
+4. Copy the returned URL and set it as `WEBAPP_URL` in script properties (optionally include `{date}` where you want the date injected).
+
+When the script sends a newsletter it will include a link to `WEBAPP_URL?date=YYYY-MM-DD` (or substitute `{date}`) so recipients can view the full newsletter in their browser.
+
+---
+
+## 💻 Development notes
+
+- The templating in [`Newsletter_Template.html`](src/Newsletter_Template.html) uses Apps Script server-side scriptlets (`<?= ... ?>` and `<? ... ?>`): editing the file in the editor preserves evaluation.
+- [`AutoMailer.gs`](src/AutoMailer.gs) contains utility functions `buildVisibleSectionsForDate(dateStr)` and `doGet(e)`: the latter is the web handler that accepts `?date=YYYY-MM-DD`.
+- If you edit permissions/scopes, update `appsscript.json` accordingly and re-authorize the script when running.
+
+---
+
+## ▶️ How to run
+
+Below are quick steps to run the project locally (with clasp) and in the Apps Script editor, plus tips for testing and scheduling daily sends.
+
+### Prerequisites
+
+- Node.js and npm installed
+- A Google account with access to the target Google Sheet
+- (Optional) `clasp` is included as a devDependency; you'll use `npm` scripts below
+
+### Local (clasp) workflow — Windows (cmd.exe)
+
+Install dependencies and authenticate clasp:
+
+```cmd
+npm install
+clasp login
+```
+
+Pull the remote project (if already created) or push local `src/` to create/update the Apps Script project:
+
+```cmd
+clasp pull   REM pulls existing Apps Script project into src/
+clasp push   REM pushes local src/ files to Apps Script
+```
+
+To create a new Apps Script project tied to a new Google Sheet:
+
+```cmd
+npm run create-sheets
+```
+
+### Run / test in Apps Script editor
+
+1. Open the project in the Apps Script editor (<https://script.google.com>) or open the project after `clasp pull`.
+2. In Project Settings → Script properties, set `SHEET_ID`, `TEST_RECIPIENT` (for safe testing), and any other properties (`WEBAPP_URL`, `MAX_ITEMS_PER_SECTION`, etc.).
+3. Use the dropdown next to the Run button to select `sendDailyNewsletter` and click Run. The first run will prompt you to authorize scopes.
+4. Check Executions (left sidebar) and Logs for runtime output and debugging.
+
+### Deploying the Web App
+
+Follow the steps in the "Deployment (Web App)" section above. After deploying, use:
+
+- Preview: `WEBAPP_URL?preview=1`
+- View a specific date: `WEBAPP_URL?date=YYYY-MM-DD`
+
+Tip: set `WEBAPP_URL` in script properties so the mailer includes a permalink in emails.
+
+### Scheduling daily sends
+
+In the Apps Script editor: Triggers → Add Trigger → select function `sendDailyNewsletter` → Event source: Time-driven → Type: Day timer → Choose hour. Save; the script will run automatically on schedule.
+
+### Testing checklist
+
+- Ensure `SHEET_ID` is correct and the sheet has the required headers (`date`, `headline`/`title`, `link`, `source`, `snippet`).
+- Set `TEST_RECIPIENT` to your email to avoid spamming other recipients during tests.
+- Use the `preview` query param to inspect full HTML before sending: `WEBAPP_URL?preview=1`
+
+### Troubleshooting
+
+- Authorization errors: open the Apps Script Editor and re-run a function to re-authorize.
+- Missing data: confirm the configured sheet tabs (see `Config.gs`) and header names.
+- Check Executions and Stackdriver logs (Logger.log) for errors.
+
+---
+
+## 🗃️ Project Structure
 
 ```plaintext
 OilGas-Wire/
@@ -58,43 +166,3 @@ OilGas-Wire/
 - Drive publishing has been removed from the default mail flow - the web app renders live content directly from the sheet (no Drive files required).
 
 ---
-
-## 👷‍♂️ How it works
-
-1. Feeds are aggregated and stored in different sheet tabs as configured in [`Config.gs`](src/Config.gs). Each sheet should have a header row with recognizable column names like `date`, `headline`/`title`, `link`, `source`, `snippet`.
-2. `sendDailyNewsletter()` reads the sheet rows for the target date (previous day by default), builds sections, renders [`Newsletter_Template.html`](src/Newsletter_Template.html), and sends a truncated HTML email.
-3. A separate `doGet(e)` web handler renders the full newsletter for the requested date (defaults to previous day). Deploy this as a Web App to get a stable permalink.
-
----
-
-## ⚙️ Configuration (Script Properties)
-
-Set these in the Apps Script project (Project Settings → Script properties) or via the script:
-
-- `SHEET_ID`: ID of the Google Sheet containing feed data (required)
-- `SEND_TO`: comma-separated list of recipient emails (required unless `TEST_RECIPIENT` is set)
-- `TEST_RECIPIENT`: when set, overrides `SEND_TO` and sends only to this address (useful for testing)
-- `MAX_ITEMS_PER_SECTION`: number of items to include in the email preview (default 6)
-- `WEBAPP_URL`: optional: set to your deployed webapp permalink. The mailer will append or substitute the date parameter (supports `{date}` placeholder). Example: `https://script.google.com/macros/s/XXX/exec` or `https://.../exec?d={date}`
-
-> [!NOTE]
-> By default the mailer uses the webapp URL (if set) as the "full newsletter" link in the email. If not set, no link is included.
-
----
-
-## 🚀 Deployment (Web App)
-
-1. Open the project in the Apps Script editor.
-2. Deploy → New deployment → Select "Web app".
-3. Set "Execute as" to `Me` and "Who has access" to `Anyone` or `Anyone with the link` (if you want viewers to open without signing in).
-4. Copy the returned URL and set it as `WEBAPP_URL` in script properties (optionally include `{date}` where you want the date injected).
-
-When the script sends a newsletter it will include a link to `WEBAPP_URL?date=YYYY-MM-DD` (or substitute `{date}`) so recipients can view the full newsletter in their browser.
-
----
-
-## 💻 Development notes
-
-- The templating in [`Newsletter_Template.html`](src/Newsletter_Template.html) uses Apps Script server-side scriptlets (`<?= ... ?>` and `<? ... ?>`): editing the file in the editor preserves evaluation.
-- [`AutoMailer.gs`](src/AutoMailer.gs) contains utility functions `buildVisibleSectionsForDate(dateStr)` and `doGet(e)`: the latter is the web handler that accepts `?date=YYYY-MM-DD`.
-- If you edit permissions/scopes, update `appsscript.json` accordingly and re-authorize the script when running.
