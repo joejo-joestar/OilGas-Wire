@@ -4,7 +4,7 @@
   <img src="assets/pixpagercar.png" alt="Feed Car" title="Feed Car" width="128">
 </p>
 
-A small Google Apps Script project that aggregates RSS/Atom feeds, filters items (company, region, commodity, industry, price hints), stores results in a Google Sheet, and generates a daily email newsletter with a web preview.
+A simple Google Apps Script project that aggregates RSS/Atom feeds, filters items (company, region, commodity, industry, price hints), stores results in a Google Sheet, and generates a daily email newsletter with a web preview.
 
 <p align="center">
 <img src="assets/feed_sheets.png" alt="Feed Sheets" title="Feed Sheets" width="600" >
@@ -17,7 +17,7 @@ A small Google Apps Script project that aggregates RSS/Atom feeds, filters items
 ## 🗂️ Project Structure
 
 ```plaintext
-Oil-and-Gas-Newsletter-and-Feed
+OilGas-Wire/
 ├── package.json                # Project metadata (dev tools)
 ├── README.md                   # This documentation
 ├── .claspignore                # git-like ignore file for clasp deployments
