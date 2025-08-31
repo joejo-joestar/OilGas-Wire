@@ -165,12 +165,12 @@ OilGas-Wire/
 ![Newsletter Mail](assets/newsletter_mail.png)
 
 - Web preview (Apps Script Web App) with permalink and optional `?date=YYYY-MM-DD` parameter to view historical newsletters.
-![Newsletter Preview](assets/newsletter_preview.png)
-
 - Template HTML (`Newsletter_Template.html`) used for the email body and web preview
 - Intelligent link handling: extracts URLs from `=HYPERLINK()` formulas in the sheet so cells that display 'LINK' still open the real URL.
 - Configurable behavior via script properties (`SEND_TO`, `TEST_RECIPIENT`, `MAX_ITEMS_PER_SECTION`, `WEBAPP_URL`, etc.).
 - A lightweight preview UI (`WebPreview.html`) served by the web app for manual QA. Visit the webapp with `?preview=1` to open a date picker and preview rendered HTML for any date.
+![Newsletter Preview](assets/newsletter_preview.png)
+
 - `getNewsletterHtml(dateStr)` server function that returns rendered newsletter HTML for the requested date (used by the preview UI).
 - `doGet(e)` now supports a `preview` mode (`?preview=1`) in addition to the existing `?date=YYYY-MM-DD` parameter.
 - Drive publishing has been removed from the default mail flow - the web app renders live content directly from the sheet (no Drive files required).
