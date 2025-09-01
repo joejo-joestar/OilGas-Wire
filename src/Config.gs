@@ -129,7 +129,7 @@ var CONFIG = [
     {
         category: 'Mergers, Acquisitions, and Joint Ventures',
         sheetName: 'Mergers, Acquisitions, and Joint Ventures',
-        headers: ['Date', 'Headline', 'Companies', 'Region', 'Article', 'Source', 'Link'],
+        headers: ['Date', 'Headline', 'Companies', 'Region', 'Snippet', 'Source', 'Link'],
         feeds: [],
         googleNewsQueries: [
             "oil and gas merger",
