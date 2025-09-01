@@ -127,7 +127,7 @@ function doGet(e) {
     // If preview UI requested, serve the small preview page (date picker + preview area)
     var isPreview = e && e.parameter && (e.parameter.preview === '1' || e.parameter.preview === 'true');
     if (isPreview) {
-        return HtmlService.createHtmlOutputFromFile('WebPreview').setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
+        return HtmlService.createHtmlOutputFromFile('Web_Preview').setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
     }
 
     var dateParam = (e && e.parameter && e.parameter.date) ? e.parameter.date : null;

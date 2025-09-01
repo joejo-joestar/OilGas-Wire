@@ -140,14 +140,13 @@ OilGas-Wire/
 ├── README.md                   # This documentation
 ├── .claspignore                # git-like ignore file for clasp deployments
 ├── assets/                     # Static assets used by the repo
-│   └── pixpagercar.png         # Small header/logo image used in README
 └── src/                        # Apps Script source files
     ├── appsscript.json             # Apps Script manifest (scopes, entry points)
     ├── AutoMailer.gs               # Main mailer + webapp handlers (sendDailyNewsletter, doGet)
     ├── Config.gs                   # CONFIG array and feed tab mappings
     ├── Feed.gs                     # Feed aggregation / parsing logic
     ├── Newsletter_Template.html    # Template used for email and web preview
-    ├── WebPreview.html             # Template used to preview newsletter HTML for any date
+    ├── Web_Preview.html             # Template used to preview newsletter HTML for any date
     └── Utils/                 # Small utility modules used by scripts
         ├── Analysis.gs        # Content analysis utilities (tagging, scoring)
         ├── Debug.gs           # Debug helpers and logging utilities
@@ -173,6 +172,5 @@ OilGas-Wire/
 
 - `getNewsletterHtml(dateStr)` server function that returns rendered newsletter HTML for the requested date (used by the preview UI).
 - `doGet(e)` now supports a `preview` mode (`?preview=1`) in addition to the existing `?date=YYYY-MM-DD` parameter.
-- Drive publishing has been removed from the default mail flow - the web app renders live content directly from the sheet (no Drive files required).
 
 ---
