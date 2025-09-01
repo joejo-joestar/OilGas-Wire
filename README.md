@@ -66,25 +66,25 @@ Below are quick steps to run the project locally (with clasp) and in the Apps Sc
 - A Google account with access to the target Google Sheet
 - (Optional) `clasp` is included as a devDependency; you'll use `npm` scripts below
 
-### Local (clasp) workflow — Windows (cmd.exe)
+### Local (clasp) workflow for Windows (cmd.exe)
 
 Install dependencies and authenticate clasp:
 
-```cmd
+```bash
 npm install
 clasp login
 ```
 
 Pull the remote project (if already created) or push local `src/` to create/update the Apps Script project:
 
-```cmd
+```bash
 clasp pull   REM pulls existing Apps Script project into src/
 clasp push   REM pushes local src/ files to Apps Script
 ```
 
 To create a new Apps Script project tied to a new Google Sheet:
 
-```cmd
+```bash
 npm run create-sheets
 ```
 
