@@ -68,7 +68,7 @@ function buildVisibleSectionsForDate(dateStr) {
         var titleCol = findHeaderIndex(['headline', 'title']);
         var linkCol = findHeaderIndex(['link']);
         var sourceCol = findHeaderIndex(['source']);
-        var snippetCol = findHeaderIndex(['snippet', 'article', 'summary']);
+        var snippetCol = findHeaderIndex(['snippet', 'summary']);
         var commodityCol = findHeaderIndex(['commodity']);
         var priceCol = findHeaderIndex(['price', 'value']);
 
@@ -214,7 +214,7 @@ function sendDailyNewsletter() {
         var titleCol = findHeaderIndex(['headline', 'title']);
         var linkCol = findHeaderIndex(['link']);
         var sourceCol = findHeaderIndex(['source']);
-        var snippetCol = findHeaderIndex(['snippet', 'article', 'summary']);
+        var snippetCol = findHeaderIndex(['snippet', 'summary']);
         var commodityCol = findHeaderIndex(['commodity']);
         var priceCol = findHeaderIndex(['price', 'value']);
 

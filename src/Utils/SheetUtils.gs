@@ -237,7 +237,7 @@ function buildRowForCategory(item, cat) {
             row.push(item.pubDate ? new Date(item.pubDate) : '');
         } else if (col.indexOf('headline') !== -1 || col.indexOf('title') !== -1) {
             row.push(item.title || '');
-        } else if (col.indexOf('article') !== -1 || col === 'article' || col.indexOf('snippet') !== -1) {
+        } else if (col.indexOf('snippet') !== -1 || col === 'snippet' || col.indexOf('summary') !== -1) {
             var raw = item.summary || item.content || '';
             var clean = (raw || '').toString().replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim();
             row.push(truncateText(clean, ARTICLE_SNIPPET_MAX));
