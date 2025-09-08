@@ -19,6 +19,24 @@ function renderNewsletterHtml(data) {
 }
 
 /**
+ * Render web-specific newsletter HTML (separate template with search & web-friendly layout)
+ */
+function renderNewsletterWebHtml(data) {
+    var tpl = HtmlService.createTemplateFromFile('Newsletter_Web');
+    tpl.sections = data.sections || [];
+    tpl.dateRangeText = data.dateRangeText || '';
+    return tpl.evaluate().getContent();
+}
+
+/**
+ * Template include helper — returns the raw content of a file so it can be injected into templates.
+ * Usage inside templates: <?!= include('Styles_Common') ?>
+ */
+function include(filename) {
+    return HtmlService.createHtmlOutputFromFile(filename).getContent();
+}
+
+/**
  * Build visible sections for a specific date (dateStr in 'yyyy-MM-dd') or for previous day when omitted.
  * Returns an array of sections suitable for `renderNewsletterHtml`.
  */
@@ -138,7 +156,8 @@ function doGet(e) {
     }
     var targetDate = dateParam || Utilities.formatDate(new Date(new Date().getTime() - 24 * 60 * 60 * 1000), Session.getScriptTimeZone() || 'UTC', 'yyyy-MM-dd');
     var drText = Utilities.formatDate(new Date(targetDate), Session.getScriptTimeZone() || 'UTC', 'MMM d, yyyy');
-    var html = renderNewsletterHtml({ sections: sections, dateRangeText: drText });
+    // For web requests, render the web-specific template (includes search UI)
+    var html = renderNewsletterWebHtml({ sections: sections, dateRangeText: drText });
     return HtmlService.createHtmlOutput(html).setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
 }
 

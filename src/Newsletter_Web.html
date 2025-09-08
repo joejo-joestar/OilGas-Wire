@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Newsletter - Web View</title>
+    <?!= include('Styles_Common') ?>
+    <?!= include('Styles_Web') ?>
+</head>
+
+<body>
+    <div class="container">
+        <div class="header">
+            <img src="https://alshirawi.com/wp-content/uploads/2022/02/Al-Shirawi-Equipment-Co_White-Logo-01.png"
+                alt="Logo">
+            <h1>Business Excellence Newsletter</h1>
+            <div style="opacity:0.95;margin-top:6px">
+                <?= dateRangeText ?>
+            </div>
+        </div>
+
+        <div class="controls">
+            <input id="searchInput" type="search" placeholder="Search headlines, sources, snippets..."
+                aria-label="Search newsletter" />
+            <select id="sectionSelect">
+                <option value="">All sections</option>
+                <? for (var s=0; s < sections.length; s++) { var sec = sections[s]; ?>
+                <option value="<?= s ?>">
+                    <?= sec.title ?>
+                </option>
+                <? } ?>
+            </select>
+            <button onclick="resetFilters()" class="btn"
+                style="background:#0a164e;color:#fff;padding:8px 12px;border-radius:6px;border:none">Reset</button>
+        </div>
+
+        <div id="sectionsRoot">
+            <? if (sections && sections.length) { ?>
+            <? for (var s = 0; s < sections.length; s++) { var sec = sections[s]; ?>
+            <div class="section-card" data-section-index="<?= s ?>">
+                <div class="section-header">
+                    <h2>
+                        <?= sec.title ?>
+                    </h2>
+                </div>
+                <? if (sec.items && sec.items.length) { ?>
+                <ul class="items">
+                    <? for (var i = 0; i < sec.items.length; i++) { var it = sec.items[i]; ?>
+                    <li class="item">
+                        <a class="headline" href="<?= it.link ?>" target="_blank">
+                            <?= it.headline ?>
+                        </a>
+                        <div class="meta">
+                            <?= it.source ?> •
+                            <?= it.pubDateStr ?>
+                        </div>
+                        <? if (it.snippet) { ?>
+                        <div class="snippet" style="margin-top:6px;color:#444">
+                            <?= it.snippet ?>
+                        </div>
+                        <? } ?>
+                    </li>
+                    <? } ?>
+                </ul>
+                <? } else { ?>
+                <div style="padding:8px;color:#666">No items in this section for the selected period.</div>
+                <? } ?>
+            </div>
+            <? } ?>
+            <? } else { ?>
+            <div class="no-results">No items found for this period.</div>
+            <? } ?>
+        </div>
+    </div>
+
+    <script>
+        (function () {
+            var input = document.getElementById('searchInput');
+            var select = document.getElementById('sectionSelect');
+            input.addEventListener('input', applyFilters);
+            select.addEventListener('change', applyFilters);
+
+            function normalize(s) { return (s || '').toString().toLowerCase(); }
+
+            function applyFilters() {
+                var q = normalize(input.value).trim();
+                var selected = select.value;
+                var sections = document.querySelectorAll('#sectionsRoot .section-card');
+                var anyVisible = false;
+                sections.forEach(function (sec) {
+                    var secIndex = sec.getAttribute('data-section-index');
+                    if (selected && selected !== secIndex) { sec.style.display = 'none'; return; }
+                    var items = sec.querySelectorAll('.item');
+                    var visibleCount = 0;
+                    items.forEach(function (item) {
+                        var text = normalize(item.innerText || item.textContent);
+                        var show = !q || text.indexOf(q) !== -1;
+                        item.style.display = show ? '' : 'none';
+                        if (show) visibleCount++;
+                    });
+                    sec.style.display = (visibleCount > 0) ? '' : 'none';
+                    if (visibleCount > 0) anyVisible = true;
+                });
+
+                var no = document.querySelector('.no-results');
+                if (!anyVisible) {
+                    if (!no) {
+                        no = document.createElement('div'); no.className = 'no-results'; no.textContent = 'No matching items.'; document.getElementById('sectionsRoot').appendChild(no);
+                    }
+                } else if (no) { no.parentNode.removeChild(no); }
+            }
+
+            window.resetFilters = function () { input.value = ''; select.value = ''; applyFilters(); }
+        })();
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Daily Oil & Gas Newsletter</title>
+    <?!= include('Styles_Common') ?>
+    <?!= include('Styles_Email') ?>
+</head>
+
+<body>
+    <div class="wrapper">
+        <div class="card-inner">
+            <div class="header">
+                <table role="presentation" cellpadding="0" cellspacing="0" border="0">
+                    <tr>
+                        <td class="logo-cell">
+                            <img src="https://alshirawi.com/wp-content/uploads/2022/02/Al-Shirawi-Equipment-Co_White-Logo-01.png"
+                                alt="Logo">
+                        </td>
+                        <td class="title-cell">
+                            <h1>Business Excellence Newsletter</h1>
+                        </td>
+                        <td class="date-cell">
+                            <p>
+                                <?= dateRangeText ?>
+                            </p>
+                        </td>
+                    </tr>
+                </table>
+            </div>
+            <div class="content">
+                <? if (sections && sections.length) { ?>
+                <? for (var s = 0; s < sections.length; s++) { var sec = sections[s]; ?>
+                <div class="section-card">
+                    <div class="section-header">
+                        <h2>
+                            <?= sec.title ?>
+                            <? if (sec.more && sec.more > 0) { ?>
+                            <small>
+                                <a href="<?= fullNewsletterUrl ?>">(+
+                                    <?= sec.more ?> more)
+                                </a>
+                            </small>
+                            <? } ?>
+                        </h2>
+                    </div>
+                    <? if (sec.items && sec.items.length) { ?>
+                    <ul class="items">
+                        <? for (var i = 0; i < sec.items.length; i++) { var it = sec.items[i]; ?>
+                        <li class="item">
+                            <div>
+                                <a class="headline" href="<?= it.link ?>" target="_blank">
+                                    <?= it.headline ?>
+                                </a>
+                            </div>
+                            <div class="meta">
+                                <?= it.source ?> •
+                                <?= it.pubDateStr ?>
+                            </div>
+                        </li>
+                        <? } ?>
+                    </ul>
+                    <? } else { ?>
+                    <p style="margin:8px 0 16px;color:#666;">No items in this section for the selected period.</p>
+                    <? } ?>
+                </div>
+                <? } ?>
+                <? } else { ?>
+                <p>No items found for this period.</p>
+                <? } ?>
+            </div>
+            <div class="footer">
+                <? if (fullNewsletterUrl) { ?>
+                <div style="margin-bottom:12px;text-align:center;">
+                    <a class="cta" href="<?= fullNewsletterUrl ?>" target="_blank" role="button">View full
+                        newsletter</a>
+                </div>
+                <? } ?>
+                This newsletter is generated automatically from the <a
+                    href="https://docs.google.com/spreadsheets/d/1cS_e0eobYINAMlWCtmlqv4iLLCe_Ou8Z1BPJntzKF1Y/"
+                    target="_blank">news sheet</a>.
+            </div>
+        </div>
+    </div>
+</body>
+
+</html>

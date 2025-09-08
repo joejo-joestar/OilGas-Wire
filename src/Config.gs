@@ -41,8 +41,8 @@ var SHEET_ID = null;
  */
 var CONFIG = [
     {
-        category: 'Unified News',
-        sheetName: 'Unified News',
+        category: 'Oil & Gas General News',
+        sheetName: 'Oil & Gas General News',
         headers: ['Date', 'Headline', 'Company', 'Price Info.', 'Region', 'Snippet', 'Source', 'Link'],
         feeds: [
             // 'https://oilprice.com/rss/main',
@@ -85,7 +85,6 @@ var CONFIG = [
             "oil and gas pipeline repair contract awarded",
             "oil and gas pipeline coating contract awarded",
             "oil and gas pipeline welding contract awarded",
-            "oil and gas pipeline tie-in contract awarded",
 
             "oil and gas refinery contract awarded",
             "oil and gas refinery maintenance contract awarded",
@@ -138,8 +137,8 @@ var CONFIG = [
         ]
     },
     {
-        category: 'Oil, Gas, and Raw Materials',
-        sheetName: 'Oil, Gas, and Raw Materials',
+        category: 'Commodity and Raw Material Prices',
+        sheetName: 'Commodity and Raw Material Prices',
         headers: ['Date', 'Headline', 'Commodity', 'Price Info.', 'Region', 'Snippet', 'Source', 'Link'],
         feeds: [
             'https://oilprice.com/rss/main',
@@ -239,7 +238,7 @@ var KNOWN_COMPANIES = [
     'Sinopec', 'CNPC', 'CNOOC', 'PetroChina', 'Lukoil', 'Rosneft', 'Gazprom', 'Repsol', 'Pertamina', 'PTT', 'YPF',
 
     // Oilfield services & contractors
-    'Halliburton', 'Schlumberger', 'Baker Hughes', 'Weatherford', 'Technip', 'TechnipFMC', 'Saipem', 'Petrofac', 'Technomak', 'Subsea7', 'McDermott', 'KBR', 'Worley', 'Jacobs', 'Fluor', 'Bechtel', 'Aker Solutions',
+    'Halliburton', 'Schlumberger', 'SLB', 'Baker Hughes', 'Weatherford', 'Technip', 'TechnipFMC', 'Saipem', 'Petrofac', 'Technomak', 'Subsea7', 'McDermott', 'KBR', 'Worley', 'Jacobs', 'Fluor', 'Bechtel', 'Aker Solutions', 'Taqa', 'NESR', 'Foster Wheeler', 'Wood', 'Transocean', 'Noble Corporation', 'Valaris', 'Diamond Offshore', 'EnscoRowan', 'Seadrill', 'KCA Deutag', 'National Oilwell Varco', 'NOV', 'Emerson', 'Schneider Electric', 'Sensia', 'ABB', 'Siemens Energy', 'GE Oil & Gas', 'BASF', 'Dow Chemical', 'DuPont', 'Ceco Environmental', 'Ecolab',
 
     // Energy / LNG / midstream
     'Sapura Energy', 'Golar', 'Mitsui', 'JGC', 'Chiyoda', 'KBR', 'Wood', 'McDermott International', 'Bloom Energy',
