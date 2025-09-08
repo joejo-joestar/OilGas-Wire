@@ -14,9 +14,11 @@
         <div class="header">
             <img src="https://alshirawi.com/wp-content/uploads/2022/02/Al-Shirawi-Equipment-Co_White-Logo-01.png"
                 alt="Logo">
-            <h1>Business Excellence Newsletter</h1>
-            <div style="opacity:0.95;margin-top:6px">
-                <?= dateRangeText ?>
+            <div class="header-right">
+                <h1>Business Excellence Newsletter</h1>
+                <div class="date-range">
+                    <?= dateRangeText ?>
+                </div>
             </div>
         </div>
 
@@ -55,11 +57,6 @@
                             <?= it.source ?> •
                             <?= it.pubDateStr ?>
                         </div>
-                        <? if (it.snippet) { ?>
-                        <div class="snippet" style="margin-top:6px;color:#444">
-                            <?= it.snippet ?>
-                        </div>
-                        <? } ?>
                     </li>
                     <? } ?>
                 </ul>
@@ -114,6 +111,11 @@
             window.resetFilters = function () { input.value = ''; select.value = ''; applyFilters(); }
         })();
     </script>
+    <div class="footer">
+        This newsletter is generated automatically from the <a
+            href="https://docs.google.com/spreadsheets/d/1cS_e0eobYINAMlWCtmlqv4iLLCe_Ou8Z1BPJntzKF1Y/"
+            target="_blank">news sheet</a>.
+    </div>
 </body>
 
 </html>

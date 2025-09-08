@@ -5,12 +5,12 @@
 
 /**
  * Build the newsletter HTML for a given date range and list of items.
- * Uses `Newsletter_Template.html` as the template in the project.
+ * Uses `Newsletter_Mail.html` as the template in the project.
  * @param {{items: Array, dateRangeText: string}} data
  * @return {string} rendered HTML
  */
 function renderNewsletterHtml(data) {
-    var tpl = HtmlService.createTemplateFromFile('Newsletter_Template');
+    var tpl = HtmlService.createTemplateFromFile('Newsletter_Mail');
     tpl.items = data.items || [];
     tpl.sections = data.sections || [];
     tpl.dateRangeText = data.dateRangeText || '';
