@@ -45,28 +45,96 @@ var CONFIG = [
         sheetName: 'Unified News',
         headers: ['Date', 'Headline', 'Company', 'Price Info.', 'Region', 'Snippet', 'Source', 'Link'],
         feeds: [
-            'https://oilprice.com/rss/main',
+            // 'https://oilprice.com/rss/main',
             'https://www.saudigulfprojects.com/feed/',
             'https://www.offshore-technology.com/feed/',
-            'https://www.rigzone.com/news/rss/rigzone_original.aspx',
+            // 'https://www.rigzone.com/news/rss/rigzone_original.aspx',
             'https://www.offshore-energy.biz/feed/',
-            'https://www.naturalgasworld.com/rss'
+            // 'https://www.naturalgasworld.com/rss'
         ],
         googleNewsQueries: [
+            // general project & contract award patterns
             "oil and gas contract awarded",
-            "oil and gas downstream contract awarded",
-            "oil and gas upstream contract awarded",
-            "oil and gas midstream contract awarded",
-            "oil and gas flng",
-            "oil and gas drilling",
-            "oil and gas production",
-            "oil and gas refinery",
-            "oil and gas water and waste water treatment",
-            "oil and gas water and waste watersolutions",
-            "oil and gas chemicals",
-            "oil and gas liquid mud plant",
-            "oil and gas vessel",
-            "opec oil decision"
+            "oil and gas contract win",
+            "oil and gas contract signed",
+            "oil and gas contract extension signed",
+            "oil and gas contract renewal signed",
+            "oil and gas agreement signed",
+            "oil and gas memorandum of understanding signed",
+
+            // project announcements, tenders, procurement and awards (exclude mergers/JVs)
+            "oil and gas project awarded",
+            "offshore project awarded",
+            "onshore project awarded",
+            "oil and gas project announced",
+            "oil and gas project launched",
+            "oil and gas project commissioned",
+            "oil and gas project startup",
+            "oil and gas tender awarded",
+            "oil and gas tender won",
+            "oil and gas procurement awarded",
+            "oil and gas order awarded",
+
+            // key contract types and scope-specific awards
+            "oil and gas pipeline contract awarded",
+            "oil and gas pipeline construction contract awarded",
+            "oil and gas pipeline maintenance contract awarded",
+            "oil and gas pipeline inspection contract awarded",
+            "oil and gas pipeline integrity contract awarded",
+            "oil and gas pipeline rehabilitation contract awarded",
+            "oil and gas pipeline repair contract awarded",
+            "oil and gas pipeline coating contract awarded",
+            "oil and gas pipeline welding contract awarded",
+            "oil and gas pipeline tie-in contract awarded",
+
+            "oil and gas refinery contract awarded",
+            "oil and gas refinery maintenance contract awarded",
+            "oil and gas refinery turnaround contract awarded",
+            "oil and gas refinery upgrade contract awarded",
+
+            "oil and gas well service contract awarded",
+            "oil and gas well completion contract awarded",
+            "oil and gas well testing contract awarded",
+            "oil and gas pressure pumping contract awarded",
+            "oil and gas drilling contract awarded",
+
+            "oil and gas liquid mud plant project awarded",
+            "oil and gas process packages awarded",
+            "oil and gas custom manufacturing contract awarded",
+
+            "oil and gas storage tank contract awarded",
+            "oil and gas storage tank maintenance contract awarded",
+            "oil and gas storage tank inspection contract awarded",
+
+            "oil and gas chemical supply contract awarded",
+            "oil and gas chemical manufacturing contract awarded",
+            "oil and gas chemical distribution contract awarded",
+
+            // engineering, procurement, construction, FEED, FID
+            "oil and gas epc contract awarded",
+            "oil and gas engineering procurement construction contract awarded",
+            "oil and gas feed contract awarded",
+            "oil and gas final investment decision",
+            "oil and gas fid",
+
+            // financing, funding, sanction and approvals for projects
+            "oil and gas project finance secured",
+            "oil and gas project funding",
+            "oil and gas project sanctioned",
+            "oil and gas project approval",
+
+            // commissioning/operations keywords
+            "oil and gas commissioning",
+            "oil and gas commissioned",
+            "oil and gas started operations",
+            "oil and gas commercial operation date",
+
+            // generic award/search terms and fallbacks
+            "oil and gas awarded",
+            "oil and gas award",
+            "oil and gas contract value",
+            "oil and gas procurement",
+            "oil and gas contract announcement"
         ]
     },
     {
@@ -77,7 +145,7 @@ var CONFIG = [
             'https://oilprice.com/rss/main',
             'https://www.investing.com/rss/news_11.rss',
             'https://www.investing.com/rss/news_25.rss',
-            'https://www.naturalgasworld.com/rss'
+            // 'https://www.naturalgasworld.com/rss'
         ],
         googleNewsQueries: [
             "crude oil price",
@@ -98,7 +166,7 @@ var CONFIG = [
         sheetName: 'Leadership Changes',
         headers: ['Date', 'Headline', 'Industry', 'Company / Individual', 'Region', 'Snippet', 'Source', 'Link'],
         feeds: [
-            'https://www.offshore-technology.com/feed/',
+            // 'https://www.offshore-technology.com/feed/',
         ],
         googleNewsQueries: [
             "ceo appointed oil and gas",
@@ -123,7 +191,8 @@ var CONFIG = [
             "water treatment company ceo change",
             "water sector board reshuffle",
             "appointed ceo water treatment",
-            "water treatment executive appointment"
+            "water treatment executive appointment",
+            "water sector leadership transition"
         ],
     },
     {
@@ -137,7 +206,18 @@ var CONFIG = [
             "oil and gas acquires",
             "oil and gas joint venture",
             "oil and gas jv",
-            "oil and gas buyout"
+            "oil and gas buyout",
+            "oil and gas strategic partnership",
+            "hydrogen industry merger",
+            "hydrogen industry acquisition",
+            "hydrogen joint venture",
+            "hydrogen jv",
+            "hydrogen strategic partnership",
+            "water treatment merger",
+            "water treatment acquisition",
+            "water treatment joint venture",
+            "water treatment jv",
+            "water sector strategic partnership"
         ],
     }
 ];

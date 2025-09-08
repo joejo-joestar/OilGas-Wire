@@ -45,7 +45,7 @@ function fetchCategory(cat, sheetId) {
     if (cat.googleNewsQueries && cat.googleNewsQueries.length) {
         cat.googleNewsQueries.forEach(function (q) {
             var encoded = encodeURIComponent(q);
-            feedUrls.push('https://news.google.com/rss/search?q=' + encoded + '&hl=en-US&ceid=US:en');
+            feedUrls.push('https://news.google.com/rss/search?q=' + encoded);
         });
     }
 

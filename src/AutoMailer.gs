@@ -309,7 +309,7 @@ function sendDailyNewsletter() {
 
     var truncatedHtml = renderNewsletterHtml({ sections: truncatedSections, dateRangeText: drText, fullNewsletterUrl: fullNewsletterUrl });
 
-    var subject = 'Bussiness Excellence Newsletter - ' + drText;
+    var subject = 'Business Excellence Newsletter - ' + drText;
     var bodyPlain = truncatedSections.map(function (sec) {
         var lines = [sec.title];
         sec.items.forEach(function (it) { lines.push('- ' + (it.headline || '') + ' • ' + (it.pubDateStr || '') + ' • ' + (it.source || '')); });
