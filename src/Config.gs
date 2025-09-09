@@ -134,7 +134,16 @@ var CONFIG = [
             "oil and gas contract value",
             "oil and gas procurement",
             "oil and gas contract announcement"
-        ]
+        ],
+        keywordInclusions: [
+            "contract", "contracts", "contracted", "awarded", "award", "awards", "procurement", "procurements",
+            "tender", "tenders", "bid", "bids", "bidder", "bidders", "agreement", "agreements",
+            "memorandum of understanding", "mou", "epc", "engineering procurement construction",
+            "feed", "final investment decision", "fid", "finance", "funding", "sanctioned", "approval",
+            "project", "projects", "offshore", "onshore", "commissioning", "commissioned", "operations", "startup", "started operations",
+            "pipeline", "refinery", "well", "drilling", "liquid mud", "process package", "custom manufacturing",
+            "storage tank", "chemical"
+        ],
     },
     {
         category: 'Commodity and Raw Material Prices',
@@ -158,7 +167,13 @@ var CONFIG = [
             "drill pipe price",
             "diesel fuel price",
             "oil and gas chemical price"
-        ]
+        ],
+        keywordInclusions: [
+            "price", "prices", "pricing", "rise", "rises", "rising", "increase", "increases", "increasing",
+            "fall", "falls", "falling", "decrease", "decreases", "decreasing", "gain", "gains", "gaining",
+            "drop", "drops", "dropping", "decline", "declines", "declining", "surge", "surges", "surging",
+            "plunge", "plunges", "plunging", "slump", "slumps", "slumping"
+        ],
     },
     {
         category: 'Leadership Changes',
@@ -193,6 +208,12 @@ var CONFIG = [
             "water treatment executive appointment",
             "water sector leadership transition"
         ],
+        keywordInclusions: [
+            "ceo", "chief executive officer", "cfo", "chief financial officer", "chairman", "board member", "board of directors",
+            "executive", "leadership", "managing director", "md", "president", "vice president", "vp",
+            "appointed", "appoints", "named", "names", "joins", "joined", "promoted", "promotes",
+            "resigns", "resigned", "steps down", "steps aside", "retires", "transition", "transitions", "change", "changes", "reshuffle", "reshuffles"
+        ],
     },
     {
         category: 'Mergers, Acquisitions, and Joint Ventures',
@@ -217,6 +238,11 @@ var CONFIG = [
             "water treatment joint venture",
             "water treatment jv",
             "water sector strategic partnership"
+        ],
+        keywordInclusions: [
+            "merger", "mergers", "acquisition", "acquisitions", "acquires", "acquire", "buyout", "buyouts",
+            "joint venture", "joint ventures", "jv", "jvs", "strategic partnership", "strategic partnerships", "partnership", "partnerships",
+            "collaboration", "collaborations", "alliance", "alliances"
         ],
     }
 ];

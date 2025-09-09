@@ -42,10 +42,14 @@ function fetchCategory(cat, sheetId) {
 
     // Build effective feed list: include configured feeds plus Google News per-query feeds if present
     var feedUrls = (cat.feeds || []).slice();
+    // If googleNewsQueries are provided, map each query to its generated feed URL
+    var newsQueryMap = {};
     if (cat.googleNewsQueries && cat.googleNewsQueries.length) {
         cat.googleNewsQueries.forEach(function (q) {
             var encoded = encodeURIComponent(q);
-            feedUrls.push('https://news.google.com/rss/search?q=' + encoded);
+            var gUrl = 'https://news.google.com/rss/search?q=' + encoded;
+            feedUrls.push(gUrl);
+            newsQueryMap[gUrl] = q;
         });
     }
 
@@ -64,7 +68,7 @@ function fetchCategory(cat, sheetId) {
 
                 var normTitle = normalizeTitle(item.title || '');
                 var linkVal = item.link || '';
-                if (matchesQueries(item, cat.queries) && !existing.links[linkVal] && !existing.titles[normTitle]) {
+                if (matchesQueries(item, cat.queries, cat.keywordInclusions, cat.keywordExclusions, feedUrl) && !existing.links[linkVal] && !existing.titles[normTitle]) {
                     // enrich item with analyzed fields for better column population
                     item.analysis = analyzeItem(item);
                     var row = buildRowForCategory(item, cat);
@@ -76,6 +80,10 @@ function fetchCategory(cat, sheetId) {
                     if (normTitle) existing.titles[normTitle] = true;
                 }
             });
+            // If this was a Google News query and parsed zero items, log the query for diagnostics
+            if ((newsQueryMap[feedUrl]) && (!items || items.length === 0)) {
+                Logger.log('Google News query returned empty results for category %s : "%s" (feedUrl=%s)', cat.category, newsQueryMap[feedUrl], feedUrl);
+            }
         } catch (e) {
             Logger.log('Failed to fetch or parse %s: %s', feedUrl, e.message);
         }
