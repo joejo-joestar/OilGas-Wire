@@ -25,6 +25,9 @@ function renderNewsletterWebHtml(data) {
     var tpl = HtmlService.createTemplateFromFile('Newsletter_Web');
     tpl.sections = data.sections || [];
     tpl.dateRangeText = data.dateRangeText || '';
+    // evaluate() returns an HtmlOutput; getContent() returns a string.
+    // Return the HTML string here. The caller (doGet) will wrap it into an HtmlOutput
+    // and can call setTitle() there.
     return tpl.evaluate().getContent();
 }
 
@@ -145,7 +148,7 @@ function doGet(e) {
     // If preview UI requested, serve the small preview page (date picker + preview area)
     var isPreview = e && e.parameter && (e.parameter.preview === '1' || e.parameter.preview === 'true');
     if (isPreview) {
-        return HtmlService.createHtmlOutputFromFile('Web_Preview').setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
+        return HtmlService.createHtmlOutputFromFile('Web_Preview').setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL).setTitle('Newsletter Preview');
     }
 
     var dateParam = (e && e.parameter && e.parameter.date) ? e.parameter.date : null;
@@ -158,7 +161,7 @@ function doGet(e) {
     var drText = Utilities.formatDate(new Date(targetDate), Session.getScriptTimeZone() || 'UTC', 'MMM d, yyyy');
     // For web requests, render the web-specific template (includes search UI)
     var html = renderNewsletterWebHtml({ sections: sections, dateRangeText: drText });
-    return HtmlService.createHtmlOutput(html).setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
+    return HtmlService.createHtmlOutput(html).setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL).setTitle('Business Excellence Newsletter');
 }
 
 /**
