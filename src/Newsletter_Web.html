@@ -49,7 +49,7 @@
                 <ul class="items">
                     <? for (var i = 0; i < sec.items.length; i++) { var it = sec.items[i]; ?>
                     <li class="item">
-                        <a class="headline" href="<?= it.link ?>" target="_blank">
+                        <a class="headline" href="<?= it.link ?>" target="_blank" rel="noopener noreferrer">
                             <?= it.headline ?>
                         </a>
                         <div class="meta">
@@ -111,10 +111,74 @@
         })();
     </script>
     <div class="footer">
-        This newsletter is generated automatically from the <a
-            href="https://docs.google.com/spreadsheets/d/1cS_e0eobYINAMlWCtmlqv4iLLCe_Ou8Z1BPJntzKF1Y/"
-            target="_blank">news sheet</a>.
+        This newsletter is generated automatically from the <a href="<?= feedSheetUrl ?>" target="_blank">news
+            sheet</a>.
     </div>
+
+    <script>
+        // On page load, ping analytics to record a page_view for the newsletter webapp
+        (function () {
+            try {
+                var nid = '<?= nid ?>';
+                var rid = ''; // optional visitor id (left blank for anonymous)
+                var feedSheetUrl = '<?= feedSheetUrl ?>';
+                var webappUrl = '<?= webappUrl ?>';
+                var u = location.href;
+                var url = (location.origin + location.pathname) + '?analytics=ping&nid=' + encodeURIComponent(nid) + '&rid=' + encodeURIComponent(rid) + '&u=' + encodeURIComponent(u) + '&src=' + encodeURIComponent('web') + '&eventDetail=' + encodeURIComponent('page_view');
+                // Use navigator.sendBeacon when available
+                if (navigator && navigator.sendBeacon) {
+                    navigator.sendBeacon(url, null);
+                } else {
+                    var i = new Image(); i.src = url; // fallback
+                }
+            } catch (e) { /* ignore */ }
+
+            // Capture clicks on article links and log via the JSON API before navigating directly.
+            document.addEventListener('click', function (ev) {
+                var a = ev.target.closest && ev.target.closest('a');
+                if (!a) return;
+                var href = a.getAttribute('href') || '';
+                if (!href || !/^https?:\/\//i.test(href)) return;
+                try {
+                    // Determine eventDetail: if this is the feed sheet link, mark specially
+                    var eventDetail = 'web_headline_click';
+                    try { if (typeof feedSheetUrl !== 'undefined' && feedSheetUrl && href.indexOf(feedSheetUrl) === 0) eventDetail = 'web_sheet_link'; } catch (e) { /* ignore */ }
+                    var payload = {
+                        eventType: 'click',
+                        eventDetail: eventDetail,
+                        nid: nid,
+                        rid: rid || '',
+                        src: 'web',
+                        url: href,
+                        ua: (navigator && navigator.userAgent) || '',
+                        referer: location.href
+                    };
+                    // If running inside Apps Script HtmlService, use google.script.run to avoid CORS
+                    if (window.google && google.script && google.script.run && typeof google.script.run.logEventApi === 'function') {
+                        try {
+                            google.script.run.withFailureHandler(function (err) { console.debug('logEventApi fail', err); }).withSuccessHandler(function () { console.debug('logEventApi ok'); }).logEventApi(payload);
+                        } catch (e) { console.debug('google.script.run error', e); }
+                    } else {
+                        // Fall back to sendBeacon/fetch to the webapp endpoint
+                        try {
+                            var endpoint = '<?= webappUrl ?>' || (location.origin + location.pathname);
+                            var body = JSON.stringify(Object.assign({ action: 'logEvent' }, payload));
+                            if (navigator && navigator.sendBeacon) {
+                                try { var blob = new Blob([body], { type: 'application/json' }); navigator.sendBeacon(endpoint, blob); } catch (e) { fetch(endpoint, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: body, keepalive: true }).catch(function () { }); }
+                            } else { try { fetch(endpoint, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: body, keepalive: true }).catch(function () { }); } catch (e) { /* ignore */ } }
+                        } catch (e) { /* ignore */ }
+                    }
+                    // If link opens in a new tab/window, don't prevent default — let browser open it.
+                    var targetAttr = a.getAttribute('target');
+                    if (targetAttr && targetAttr.toLowerCase() === '_blank') {
+                        return;
+                    }
+                    ev.preventDefault();
+                    window.location.href = href;
+                } catch (e) { /* fallback: let link behave normally */ }
+            }, true);
+        })();
+    </script>
 </body>
 
 </html>

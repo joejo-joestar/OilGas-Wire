@@ -15,6 +15,9 @@ function renderNewsletterHtml(data) {
     tpl.sections = data.sections || [];
     tpl.dateRangeText = data.dateRangeText || '';
     tpl.fullNewsletterUrl = data.fullNewsletterUrl || '';
+    // feedSheetUrl and nid are used by templates for monitoring/analytics
+    tpl.feedSheetUrl = data.feedSheetUrl || ('https://docs.google.com/spreadsheets/d/' + getSheetId() + '/');
+    tpl.nid = data.nid || '';
     return tpl.evaluate().getContent();
 }
 
@@ -25,6 +28,24 @@ function renderNewsletterWebHtml(data) {
     var tpl = HtmlService.createTemplateFromFile('Newsletter_Web');
     tpl.sections = data.sections || [];
     tpl.dateRangeText = data.dateRangeText || '';
+    // Build a signed feedSheetUrl for web footer clicks so clicks can be verified and logged server-side.
+    var rawFeedSheetUrl = data.feedSheetUrl || ('https://docs.google.com/spreadsheets/d/' + getSheetId() + '/');
+    tpl.feedSheetUrl = rawFeedSheetUrl;
+    try {
+        if (rawFeedSheetUrl && /^https?:\/\//i.test(rawFeedSheetUrl)) {
+            var nid_for_web = data.nid || '';
+            var src_web = 'web';
+            var eventDetail_web = 'web_sheet_link';
+            var sigBase_web = (nid_for_web || '') + '|' + '' + '|' + (rawFeedSheetUrl || '') + '|' + src_web + '|' + eventDetail_web;
+            var sig_web = '';
+            try { sig_web = computeHmacHex(sigBase_web); } catch (e) { sig_web = ''; }
+            var sep_fs = rawFeedSheetUrl.indexOf('?') === -1 ? '?' : '&';
+            tpl.feedSheetUrl = rawFeedSheetUrl + sep_fs + 'nid=' + encodeURIComponent(nid_for_web) + '&rid=&src=' + encodeURIComponent(src_web) + '&eventDetail=' + encodeURIComponent(eventDetail_web) + (sig_web ? '&sig=' + encodeURIComponent(sig_web) : '');
+        }
+    } catch (e) { /* best-effort; keep raw url on failure */ }
+    tpl.nid = data.nid || '';
+    // provide deployed webapp URL to the template so client JS can call the JSON API reliably
+    try { tpl.webappUrl = data.webappUrl || PropertiesService.getScriptProperties().getProperty('WEBAPP_URL') || ''; } catch (e) { tpl.webappUrl = data.webappUrl || ''; }
     // evaluate() returns an HtmlOutput; getContent() returns a string.
     // Return the HTML string here. The caller (doGet) will wrap it into an HtmlOutput
     // and can call setTitle() there.
@@ -145,6 +166,31 @@ function buildVisibleSectionsForDate(dateStr) {
  * Web app GET handler — renders the previous day's newsletter HTML.
  */
 function doGet(e) {
+    // Route analytics endpoints when `analytics` parameter is present.
+    // Supported: ?analytics=open (pixel), ?analytics=r (redirect), ?analytics=ping (simple GET track)
+    if (e && e.parameter && e.parameter.analytics) {
+        try {
+            return handleAnalyticsGet(e);
+        } catch (err) {
+            // fall through to normal rendering on error
+            Logger.log('Analytics handler error: ' + (err && err.message));
+        }
+    }
+    // Debug helper: ?debug=1 returns a small diagnostic page showing client UA and server headers
+    if (e && e.parameter && (e.parameter.debug === '1' || e.parameter.debug === 'true')) {
+        try {
+            var hdrs = (e && e.headers) ? JSON.stringify(e.headers, null, 2) : 'no headers available';
+            var dbgHtml = '<!doctype html><html><head><meta charset="utf-8"><title>Webapp Debug</title></head><body>' +
+                '<h2>Webapp Debug</h2>' +
+                '<p>Open this page in the browser that fails (Firefox) and copy the contents below or take a screenshot.</p>' +
+                '<h3>Client-side navigator.userAgent</h3><pre id="ua">(loading...)</pre>' +
+                '<h3>Server-side headers (as seen by the webapp)</h3><pre>' + hdrs + '</pre>' +
+                '<h3>Console</h3><pre id="console"></pre>' +
+                '<script>try{document.getElementById("ua").textContent=navigator.userAgent;}catch(e){document.getElementById("ua").textContent="(error)"+e;}console.log("Webapp debug loaded");</script>' +
+                '</body></html>';
+            return HtmlService.createHtmlOutput(dbgHtml).setTitle('Webapp Debug').setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
+        } catch (err) { /* fall through to normal rendering on error */ }
+    }
     // If preview UI requested, serve the small preview page (date picker + preview area)
     var isPreview = e && e.parameter && (e.parameter.preview === '1' || e.parameter.preview === 'true');
     if (isPreview) {
@@ -152,6 +198,40 @@ function doGet(e) {
     }
 
     var dateParam = (e && e.parameter && e.parameter.date) ? e.parameter.date : null;
+    // If the webapp was opened via a signed CTA link from email, verify the signature
+    // and log a mail_web_click event server-side. Expected query params appended by
+    // the mailer: rid=<hex>, src=<source>, eventDetail=<detail>, sig=<hmac>
+    try {
+        if (e && e.parameter && e.parameter.rid && e.parameter.sig) {
+            try {
+                var q = e.parameter;
+                var rid_q = (q.rid || '').toString();
+                var src_q = (q.src || 'gmail').toString();
+                var eventDetail_q = (q.eventDetail || q.detail || 'mail_web_click').toString();
+                var nid_q = (q.nid || '') || '';
+                // Reconstruct the target URL that the mailer signed: WEBAPP_URL with ?date=...
+                var fullUrl = '';
+                try {
+                    var base = (PropertiesService.getScriptProperties().getProperty('WEBAPP_URL') || '').toString();
+                    if (base) {
+                        var datep = (e.parameter.date || '');
+                        var sep = base.indexOf('?') === -1 ? '?' : '&';
+                        fullUrl = base + (datep ? (sep + 'date=' + encodeURIComponent(datep)) : '');
+                    }
+                } catch (ee) { fullUrl = ''; }
+                var sigBase = (nid_q || '') + '|' + (rid_q || '') + '|' + (fullUrl || '') + '|' + (src_q || '') + '|' + (eventDetail_q || '');
+                var sigOk = false;
+                try { sigOk = verifyHmacHex(sigBase, (e.parameter.sig || '').toString()); } catch (ve) { sigOk = false; }
+                if (sigOk) {
+                    try {
+                        var target = resolveAnalyticsTarget(nid_q);
+                        var evt = { timestamp: new Date(), eventType: 'click', eventDetail: eventDetail_q || 'mail_web_click', nid: nid_q || '', recipientHash: rid_q, src: src_q || 'gmail', url: fullUrl || '', ua: (e && e.headers && (e.headers['User-Agent'] || e.headers['user-agent'])) || '', referer: (e && e.parameter && e.parameter.r) || '' };
+                        logAnalyticsEvent(target.spreadsheetId, evt);
+                    } catch (le) { /* ignore logging errors */ }
+                }
+            } catch (err) { /* ignore verification errors */ }
+        }
+    } catch (err) { /* best-effort only */ }
     var sections = [];
     try { sections = buildVisibleSectionsForDate(dateParam); } catch (err) {
         var tplErr = HtmlService.createHtmlOutput('<p>Error building newsletter preview: ' + (err && err.message) + '</p>');
@@ -160,7 +240,10 @@ function doGet(e) {
     var targetDate = dateParam || Utilities.formatDate(new Date(new Date().getTime() - 24 * 60 * 60 * 1000), Session.getScriptTimeZone() || 'UTC', 'yyyy-MM-dd');
     var drText = Utilities.formatDate(new Date(targetDate), Session.getScriptTimeZone() || 'UTC', 'MMM d, yyyy');
     // For web requests, render the web-specific template (includes search UI)
-    var html = renderNewsletterWebHtml({ sections: sections, dateRangeText: drText });
+    var sheetId = getSheetId();
+    var feedSheetUrl = 'https://docs.google.com/spreadsheets/d/' + sheetId + '/';
+    var nid = 'newsletter-' + Utilities.formatDate(new Date(targetDate), Session.getScriptTimeZone() || 'UTC', 'yyyy-MM-dd');
+    var html = renderNewsletterWebHtml({ sections: sections, dateRangeText: drText, feedSheetUrl: feedSheetUrl, nid: nid });
     return HtmlService.createHtmlOutput(html).setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL).setTitle('Business Excellence Newsletter');
 }
 
@@ -297,8 +380,10 @@ function sendDailyNewsletter() {
     // Remove sections that have no items so they don't appear in the newsletter
     var visibleSections = sections.filter(function (s) { return s && s.items && s.items.length; });
 
-    // Render full newsletter HTML (will be published to Drive and linked from the email)
-    var fullHtml = renderNewsletterHtml({ sections: visibleSections, dateRangeText: drText });
+    // Render full newsletter HTML for web (keep original links)
+    var feedSheetUrl = 'https://docs.google.com/spreadsheets/d/' + sheetId + '/';
+    var nid = 'newsletter-' + Utilities.formatDate(prevDayStart, Session.getScriptTimeZone() || 'UTC', 'yyyy-MM-dd');
+    var fullHtml = renderNewsletterHtml({ sections: visibleSections, dateRangeText: drText, feedSheetUrl: feedSheetUrl, nid: nid });
 
     // Drive publishing removed — we don't create Drive files for the newsletter anymore.
     // Keep fullNewsletterUrl empty by default; it can be overridden by WEBAPP_URL below.
@@ -329,7 +414,39 @@ function sendDailyNewsletter() {
     // Also include a small overall remaining count if useful
     var totalRemaining = visibleSections.reduce(function (acc, s, idx) { return acc + Math.max(0, s.items.length - (truncatedSections[idx] ? truncatedSections[idx].items.length : 0)); }, 0);
 
-    var truncatedHtml = renderNewsletterHtml({ sections: truncatedSections, dateRangeText: drText, fullNewsletterUrl: fullNewsletterUrl });
+    // Build a newsletter id used by analytics (one per newsletter/date)
+    var nid = 'newsletter-' + Utilities.formatDate(prevDayStart, Session.getScriptTimeZone() || 'UTC', 'yyyy-MM-dd');
+
+    // Create deep copies for email rendering so web/fullHtml keeps original links
+    var emailTruncatedSections = JSON.parse(JSON.stringify(truncatedSections));
+    var emailVisibleSections = JSON.parse(JSON.stringify(visibleSections));
+    // Do not overwrite headline hrefs in the email (avoid wrapping primary link). Instead create a separate trackedLink
+    try {
+        function attachPreviewTrackedLinks(secs) {
+            for (var si = 0; si < secs.length; si++) {
+                var s = secs[si];
+                if (!s || !s.items) continue;
+                for (var ii = 0; ii < s.items.length; ii++) {
+                    var it = s.items[ii];
+                    try {
+                        if (it && it.link && /^https?:\/\//i.test(it.link)) {
+                            // preview uses empty rid (unsigned) so analytics redirect may be unsigned; best-effort preview
+                            try { it.trackedLink = buildAnalyticsRedirectUrl(it.link, nid, '', 'gmail', 'mail_headline_click'); } catch (e) { it.trackedLink = it.link; }
+                        }
+                    } catch (e) { /* ignore per-item errors */ }
+                }
+            }
+        }
+        attachPreviewTrackedLinks(emailTruncatedSections);
+        attachPreviewTrackedLinks(emailVisibleSections);
+    } catch (e) { /* fail-safe: keep original links */ }
+
+    var truncatedHtml = renderNewsletterHtml({ sections: emailTruncatedSections, dateRangeText: drText, fullNewsletterUrl: fullNewsletterUrl });
+    // Append a tracking pixel (best-effort). buildAnalyticsPixelUrl requires WEBAPP_URL in script properties.
+    try {
+        var pixelUrl = buildAnalyticsPixelUrl(nid, '');
+        truncatedHtml += '<img src="' + pixelUrl + '" width="1" height="1" alt="" style="display:none;max-height:1px;max-width:1px;">';
+    } catch (e) { /* ignore when WEBAPP_URL not configured */ }
 
     var subject = 'Business Excellence Newsletter - ' + drText;
     var bodyPlain = truncatedSections.map(function (sec) {
@@ -341,12 +458,72 @@ function sendDailyNewsletter() {
 
     if (fullNewsletterUrl) bodyPlain += '\n\nView full newsletter: ' + fullNewsletterUrl;
 
-    // Send truncated HTML as the email body (full HTML is available via the Drive link)
-    MailApp.sendEmail({
-        to: sendTo.join(','),
-        subject: subject,
-        htmlBody: truncatedHtml,
-        body: bodyPlain
-    });
+    // Send individualized emails so analytics can track per-recipient interactions.
+    // Compute a deterministic recipient hash (SHA-256 hex) to use as `rid`.
+    function computeRecipientHash(email) {
+        if (!email) return '';
+        try {
+            var digest = Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256, email.toString().trim().toLowerCase(), Utilities.Charset.UTF_8);
+            var hex = '';
+            for (var i = 0; i < digest.length; i++) {
+                var v = digest[i]; if (v < 0) v += 256;
+                hex += ('0' + v.toString(16)).slice(-2);
+            }
+            return hex;
+        } catch (e) { return Utilities.base64Encode(email.toString()); }
+    }
+
+    for (var ri = 0; ri < sendTo.length; ri++) {
+        var recipient = sendTo[ri];
+        var rid = computeRecipientHash(recipient || '');
+        // Deep copy sections to avoid cross-recipient mutation
+        var perSections = JSON.parse(JSON.stringify(emailTruncatedSections));
+        // Rewrite links for this recipient with per-recipient rid and mail-specific event details
+        try {
+            for (var si = 0; si < perSections.length; si++) {
+                var sec = perSections[si]; if (!sec || !sec.items) continue;
+                for (var ii = 0; ii < sec.items.length; ii++) {
+                    var it = sec.items[ii];
+                    if (it && it.link && /^https?:\/\//i.test(it.link)) {
+                        try { it.trackedLink = buildAnalyticsRedirectUrl(it.link, nid, rid, 'gmail', 'mail_headline_click'); } catch (e) { it.trackedLink = it.link; }
+                    }
+                }
+            }
+        } catch (e) { /* ignore rewrite errors per recipient */ }
+
+        // Rewrite per-recipient fullNewsletterUrl (CTA) and feedSheetUrl (sheet link) so clicks are tracked
+        var perFullNewsletterUrl = fullNewsletterUrl;
+        try {
+            if (fullNewsletterUrl && /^https?:\/\//i.test(fullNewsletterUrl)) {
+                // Instead of an intermediate analytics redirect, sign the direct webapp URL
+                // so the webapp can verify the signature on page load and log the click server-side.
+                try {
+                    var src = 'gmail';
+                    var eventDetail = 'mail_web_click';
+                    var sigBase = (nid || '') + '|' + (rid || '') + '|' + (fullNewsletterUrl || '') + '|' + (src || '') + '|' + (eventDetail || '');
+                    var sig = '';
+                    try { sig = computeHmacHex(sigBase); } catch (e) { sig = ''; }
+                    var sep2 = fullNewsletterUrl.indexOf('?') === -1 ? '?' : '&';
+                    perFullNewsletterUrl = fullNewsletterUrl + sep2 + 'nid=' + encodeURIComponent(nid || '') + '&rid=' + encodeURIComponent(rid) + '&src=' + encodeURIComponent(src) + '&eventDetail=' + encodeURIComponent(eventDetail) + (sig ? '&sig=' + encodeURIComponent(sig) : '');
+                } catch (e) { perFullNewsletterUrl = fullNewsletterUrl; }
+            }
+        } catch (e) { /* keep original */ }
+        var perFeedSheetUrl = feedSheetUrl;
+        try { if (feedSheetUrl && /^https?:\/\//i.test(feedSheetUrl)) perFeedSheetUrl = buildAnalyticsRedirectUrl(feedSheetUrl, nid, rid, 'gmail', 'mail_sheet_click'); } catch (e) { /* keep original */ }
+
+        // Render per-recipient HTML and append pixel
+        var perHtml = renderNewsletterHtml({ sections: perSections, dateRangeText: drText, fullNewsletterUrl: perFullNewsletterUrl, feedSheetUrl: perFeedSheetUrl });
+        try {
+            var perPixel = buildAnalyticsPixelUrl(nid, rid, 'gmail', 'email_open');
+            perHtml += '<img src="' + perPixel + '" width="1" height="1" alt="" style="display:none;max-height:1px;max-width:1px;">';
+        } catch (e) { /* ignore when WEBAPP_URL not set */ }
+
+        try {
+            MailApp.sendEmail({ to: recipient, subject: subject, htmlBody: perHtml, body: bodyPlain });
+            Logger.log('Sent newsletter to ' + recipient + ' rid=' + rid);
+        } catch (e) {
+            Logger.log('Failed to send to ' + recipient + ': ' + (e && e.message));
+        }
+    }
 
 }
