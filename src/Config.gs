@@ -45,12 +45,12 @@ var CONFIG = [
         sheetName: 'Oil & Gas General News',
         headers: ['Date', 'Headline', 'Company', 'Price Info.', 'Region', 'Snippet', 'Source', 'Link'],
         feeds: [
-            // 'https://oilprice.com/rss/main',
+            'https://oilprice.com/rss/main',
             'https://www.saudigulfprojects.com/feed/',
             'https://www.offshore-technology.com/feed/',
-            // 'https://www.rigzone.com/news/rss/rigzone_original.aspx',
+            'https://www.rigzone.com/news/rss/rigzone_original.aspx',
             'https://www.offshore-energy.biz/feed/',
-            // 'https://www.naturalgasworld.com/rss'
+            'https://www.naturalgasworld.com/rss'
         ],
         googleNewsQueries: [
             // general project & contract award patterns
@@ -153,7 +153,6 @@ var CONFIG = [
             'https://oilprice.com/rss/main',
             'https://www.investing.com/rss/news_11.rss',
             'https://www.investing.com/rss/news_25.rss',
-            // 'https://www.naturalgasworld.com/rss'
         ],
         googleNewsQueries: [
             "crude oil price",
@@ -180,7 +179,7 @@ var CONFIG = [
         sheetName: 'Leadership Changes',
         headers: ['Date', 'Headline', 'Industry', 'Company / Individual', 'Region', 'Snippet', 'Source', 'Link'],
         feeds: [
-            // 'https://www.offshore-technology.com/feed/',
+            'https://www.offshore-technology.com/feed/',
         ],
         googleNewsQueries: [
             "ceo appointed oil and gas",

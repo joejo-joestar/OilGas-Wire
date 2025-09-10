@@ -179,6 +179,76 @@
             }, true);
         })();
     </script>
+    <script>
+        // Active-time tracking: count seconds when page is visible and focused (active users only).
+        (function () {
+            var nid = '<?= nid ?>';
+            var rid = ''; // anonymous for web
+            var webappUrl = '<?= webappUrl ?>' || (location.origin + location.pathname);
+            var sendInterval = 30 * 1000; // send every 30s
+            var accumulated = 0; // milliseconds
+            var runningSince = null;
+            var lastSent = Date.now();
+
+            function isVisibleAndFocused() {
+                // Treat the page as active when it's visible to the user. Focus is helpful
+                // but not required (e.g. user may read while another window has focus).
+                try { return document.visibilityState === 'visible' || document.hasFocus(); } catch (e) { return true; }
+            }
+
+            function startRunning() { if (!runningSince) runningSince = Date.now(); }
+            function stopRunning() {
+                if (runningSince) { accumulated += Date.now() - runningSince; runningSince = null; }
+            }
+
+            // send active time payload to server
+            function sendActivePing(final) {
+                // compute seconds to report and reset accumulator when sent
+                var now = Date.now();
+                if (runningSince) { accumulated += now - runningSince; runningSince = now; }
+                var seconds = Math.floor(accumulated / 1000);
+                if (seconds <= 0 && !final) return; // nothing to send
+                var payload = { action: 'logActiveTime', nid: nid || '', rid: rid || '', secondsActive: seconds, timestamp: new Date().toISOString(), ua: (navigator && navigator.userAgent) || '', referer: location.href };
+                accumulated = 0; // reset local counter after scheduling send
+
+                // Prefer google.script.run when available inside Apps Script HtmlService
+                if (window.google && google.script && google.script.run && typeof google.script.run.logActiveTimeApi === 'function') {
+                    try { google.script.run.withFailureHandler(function () { }).withSuccessHandler(function () { }).logActiveTimeApi(payload); } catch (e) { /* ignore */ }
+                    return;
+                }
+
+                // Use sendBeacon when possible for reliability on unload
+                try {
+                    var endpoint = webappUrl;
+                    var body = JSON.stringify(payload);
+                    if (navigator && navigator.sendBeacon) {
+                        try { var blob = new Blob([body], { type: 'application/json' }); navigator.sendBeacon(endpoint, blob); return; } catch (e) { /* fall through to fetch */ }
+                    }
+                    // fallback to fetch (keepalive flag where supported)
+                    try { fetch(endpoint, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: body, keepalive: true }).catch(function () { }); } catch (e) { /* ignore */ }
+                } catch (e) { /* ignore */ }
+            }
+
+            // Visibility and focus tracking
+            document.addEventListener('visibilitychange', function () { if (isVisibleAndFocused()) startRunning(); else stopRunning(); });
+            window.addEventListener('focus', function () { if (isVisibleAndFocused()) startRunning(); });
+            window.addEventListener('blur', function () { stopRunning(); });
+
+            // Treat user input as sign of activity; start timer on interaction
+            ['mousemove', 'keydown', 'scroll', 'touchstart'].forEach(function (ev) { document.addEventListener(ev, function () { if (isVisibleAndFocused()) startRunning(); }, { passive: true }); });
+
+            // Periodic sender
+            var intervalId = setInterval(function () { try { sendActivePing(false); } catch (e) { } }, sendInterval);
+
+            // Final send on unload
+            window.addEventListener('beforeunload', function (e) { try { sendActivePing(true); } catch (err) { } });
+            // Also attempt on pagehide which fires in some browsers
+            window.addEventListener('pagehide', function () { try { sendActivePing(true); } catch (err) { } });
+
+            // start running initially if visible (or assume active on older clients)
+            try { if (isVisibleAndFocused()) startRunning(); else { /* no-op */ } } catch (e) { startRunning(); }
+        })();
+    </script>
 </body>
 
 </html>

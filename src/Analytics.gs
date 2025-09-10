@@ -311,6 +311,7 @@ function doPost(e) {
     try {
         if (action === 'signRedirect') return ContentService.createTextOutput(JSON.stringify(signRedirectApi(body))).setMimeType(ContentService.MimeType.JSON);
         if (action === 'logEvent') return ContentService.createTextOutput(JSON.stringify(logEventApi(body))).setMimeType(ContentService.MimeType.JSON);
+        if (action === 'logActiveTime') return ContentService.createTextOutput(JSON.stringify(logActiveTimeApi(body))).setMimeType(ContentService.MimeType.JSON);
         if (action === 'verify') return ContentService.createTextOutput(JSON.stringify(verifyApi(body))).setMimeType(ContentService.MimeType.JSON);
     } catch (err) {
         return ContentService.createTextOutput(JSON.stringify({ ok: false, error: err && err.message })).setMimeType(ContentService.MimeType.JSON);
@@ -362,6 +363,23 @@ function logEventApi(body) {
     var target = resolveAnalyticsTarget(evt.nid);
     logAnalyticsEvent(target.spreadsheetId, evt);
     return { ok: true };
+}
+
+function logActiveTimeApi(body) {
+    try {
+        var nid = (body.nid || '').toString();
+        var rid = (body.rid || '').toString();
+        var secs = Number(body.secondsActive || body.seconds || 0) || 0;
+        var ua = (body.ua || '').toString();
+        var referer = (body.referer || '').toString();
+        var extra = body.extra || {};
+        var target = resolveAnalyticsTarget(nid);
+        var evt = { timestamp: new Date(), eventType: 'active_time', eventDetail: 'active_time_seconds', nid: nid, recipientHash: rid, src: 'web', url: (body.url || ''), ua: ua, referer: referer, extra: Object.assign({ seconds: secs }, extra) };
+        logAnalyticsEvent(target.spreadsheetId, evt);
+        return { ok: true };
+    } catch (e) {
+        return { ok: false, error: (e && e.message) || 'error' };
+    }
 }
 
 function verifyApi(body) {
