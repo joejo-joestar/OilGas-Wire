@@ -208,7 +208,7 @@
                 if (runningSince) { accumulated += now - runningSince; runningSince = now; }
                 var seconds = Math.floor(accumulated / 1000);
                 if (seconds <= 0 && !final) return; // nothing to send
-                var payload = { action: 'logActiveTime', nid: nid || '', rid: rid || '', secondsActive: seconds, timestamp: new Date().toISOString(), ua: (navigator && navigator.userAgent) || '', referer: location.href };
+                var payload = { action: 'logActiveTime', nid: nid || '', rid: rid || '', seconds: seconds, ua: (navigator && navigator.userAgent) || '', referer: location.href };
                 accumulated = 0; // reset local counter after scheduling send
 
                 // Prefer google.script.run when available inside Apps Script HtmlService
