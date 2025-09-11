@@ -35,7 +35,7 @@ function renderNewsletterWebHtml(data) {
         if (rawFeedSheetUrl && /^https?:\/\//i.test(rawFeedSheetUrl)) {
             var nid_for_web = data.nid || '';
             var src_web = 'web';
-            var eventDetail_web = 'web_sheet_link';
+            var eventDetail_web = 'web_sheet_click';
             var sigBase_web = (nid_for_web || '') + '|' + '' + '|' + (rawFeedSheetUrl || '') + '|' + src_web + '|' + eventDetail_web;
             var sig_web = '';
             try { sig_web = computeHmacHex(sigBase_web); } catch (e) { sig_web = ''; }
@@ -206,7 +206,7 @@ function doGet(e) {
             try {
                 var q = e.parameter;
                 var rid_q = (q.rid || '').toString();
-                var src_q = (q.src || 'gmail').toString();
+                var src_q = (q.src || 'mail').toString();
                 var eventDetail_q = (q.eventDetail || q.detail || 'mail_web_click').toString();
                 var nid_q = (q.nid || '') || '';
                 // Reconstruct the target URL that the mailer signed: WEBAPP_URL with ?date=...
@@ -225,7 +225,7 @@ function doGet(e) {
                 if (sigOk) {
                     try {
                         var target = resolveAnalyticsTarget(nid_q);
-                        var evt = { timestamp: new Date(), eventType: 'click', eventDetail: eventDetail_q || 'mail_web_click', nid: nid_q || '', recipientHash: rid_q, src: src_q || 'gmail', url: fullUrl || '', ua: (e && e.headers && (e.headers['User-Agent'] || e.headers['user-agent'])) || '', referer: (e && e.parameter && e.parameter.r) || '' };
+                        var evt = { timestamp: new Date(), eventType: 'click', eventDetail: eventDetail_q || 'mail_web_click', nid: nid_q || '', recipientHash: rid_q, src: src_q || 'mail', url: fullUrl || '', ua: (e && e.headers && (e.headers['User-Agent'] || e.headers['user-agent'])) || '', referer: (e && e.parameter && e.parameter.r) || '' };
                         logAnalyticsEvent(target.spreadsheetId, evt);
                     } catch (le) { /* ignore logging errors */ }
                 }
@@ -431,7 +431,7 @@ function sendDailyNewsletter() {
                     try {
                         if (it && it.link && /^https?:\/\//i.test(it.link)) {
                             // preview uses empty rid (unsigned) so analytics redirect may be unsigned; best-effort preview
-                            try { it.trackedLink = buildAnalyticsRedirectUrl(it.link, nid, '', 'gmail', 'mail_headline_click'); } catch (e) { it.trackedLink = it.link; }
+                            try { it.trackedLink = buildAnalyticsRedirectUrl(it.link, nid, '', 'mail', 'mail_headline_click'); } catch (e) { it.trackedLink = it.link; }
                         }
                     } catch (e) { /* ignore per-item errors */ }
                 }
@@ -485,7 +485,7 @@ function sendDailyNewsletter() {
                 for (var ii = 0; ii < sec.items.length; ii++) {
                     var it = sec.items[ii];
                     if (it && it.link && /^https?:\/\//i.test(it.link)) {
-                        try { it.trackedLink = buildAnalyticsRedirectUrl(it.link, nid, rid, 'gmail', 'mail_headline_click'); } catch (e) { it.trackedLink = it.link; }
+                        try { it.trackedLink = buildAnalyticsRedirectUrl(it.link, nid, rid, 'mail', 'mail_headline_click'); } catch (e) { it.trackedLink = it.link; }
                     }
                 }
             }
@@ -498,7 +498,7 @@ function sendDailyNewsletter() {
                 // Instead of an intermediate analytics redirect, sign the direct webapp URL
                 // so the webapp can verify the signature on page load and log the click server-side.
                 try {
-                    var src = 'gmail';
+                    var src = 'mail';
                     var eventDetail = 'mail_web_click';
                     var sigBase = (nid || '') + '|' + (rid || '') + '|' + (fullNewsletterUrl || '') + '|' + (src || '') + '|' + (eventDetail || '');
                     var sig = '';
@@ -509,12 +509,12 @@ function sendDailyNewsletter() {
             }
         } catch (e) { /* keep original */ }
         var perFeedSheetUrl = feedSheetUrl;
-        try { if (feedSheetUrl && /^https?:\/\//i.test(feedSheetUrl)) perFeedSheetUrl = buildAnalyticsRedirectUrl(feedSheetUrl, nid, rid, 'gmail', 'mail_sheet_click'); } catch (e) { /* keep original */ }
+        try { if (feedSheetUrl && /^https?:\/\//i.test(feedSheetUrl)) perFeedSheetUrl = buildAnalyticsRedirectUrl(feedSheetUrl, nid, rid, 'mail', 'mail_sheet_click'); } catch (e) { /* keep original */ }
 
         // Render per-recipient HTML and append pixel
         var perHtml = renderNewsletterHtml({ sections: perSections, dateRangeText: drText, fullNewsletterUrl: perFullNewsletterUrl, feedSheetUrl: perFeedSheetUrl });
         try {
-            var perPixel = buildAnalyticsPixelUrl(nid, rid, 'gmail', 'email_open');
+            var perPixel = buildAnalyticsPixelUrl(nid, rid, 'mail', 'email_open');
             perHtml += '<img src="' + perPixel + '" width="1" height="1" alt="" style="display:none;max-height:1px;max-width:1px;">';
         } catch (e) { /* ignore when WEBAPP_URL not set */ }
 

@@ -142,7 +142,7 @@
                 try {
                     // Determine eventDetail: if this is the feed sheet link, mark specially
                     var eventDetail = 'web_headline_click';
-                    try { if (typeof feedSheetUrl !== 'undefined' && feedSheetUrl && href.indexOf(feedSheetUrl) === 0) eventDetail = 'web_sheet_link'; } catch (e) { /* ignore */ }
+                    try { if (typeof feedSheetUrl !== 'undefined' && feedSheetUrl && href.indexOf(feedSheetUrl) === 0) eventDetail = 'web_sheet_click'; } catch (e) { /* ignore */ }
                     var payload = {
                         eventType: 'click',
                         eventDetail: eventDetail,

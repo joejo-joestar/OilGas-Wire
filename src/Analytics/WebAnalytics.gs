@@ -7,86 +7,13 @@
 function handleAnalyticsGet(e) {
     var params = e && e.parameter ? e.parameter : {};
     var type = params.analytics || '';
-    if (type === 'open') return analyticsPixel(e);
+    // Pixel tracking disabled: ignore 'open' requests
     if (type === 'r') return analyticsRedirect(params);
     if (type === 'ping') return analyticsPing(params);
     return HtmlService.createHtmlOutput('');
 }
 
-function analyticsPixel(e) {
-    var params = e && e.parameter ? e.parameter : {};
-    var headers = e && e.headers ? e.headers : {};
-    var nid = (params.nid || '').toString();
-    var rid = (params.rid || '').toString();
-    var src = (params.src || '').toString();
-    var eventDetail = (params.eventDetail || params.detail || '').toString();
-    var sig = (params.sig || '').toString();
-    var allowedOrigin = getWebappOrigin();
-    var referer = (params.r || '') || (headers && (headers.Referer || headers.referer)) || '';
-
-    var sigBase = (nid || '') + '|' + (rid || '') + '|' + (src || '') + '|' + (eventDetail || '');
-    if (!verifyHmacHex(sigBase, sig) && !(referer && referer.indexOf(allowedOrigin) === 0)) {
-        return ContentService.createTextOutput('').setMimeType(ContentService.MimeType.TEXT);
-    }
-
-    try {
-        if ((src || '').toString().toLowerCase() === 'sheet') {
-            var ref = referer || '';
-            var m = ref.match(/\/spreadsheets\/d\/([a-zA-Z0-9-_]+)/i);
-            if (m && m[1]) {
-                var sheetId = m[1];
-                var windowSec = getDedupeWindowSeconds();
-                var now = new Date().getTime();
-                try {
-                    var target = resolveAnalyticsTarget(nid);
-                    var ss = SpreadsheetApp.openById(target.spreadsheetId);
-                    var sh = ss.getSheetByName(ANALYTICS_DEFAULT_SHEET);
-                    if (sh) {
-                        var lastRow = sh.getLastRow() || 0;
-                        var maxScan = 500;
-                        var start = Math.max(2, lastRow - maxScan + 1);
-                        var num = Math.max(0, lastRow - start + 1);
-                        if (num > 0) {
-                            var rows = sh.getRange(start, 1, num, 11).getValues();
-                            for (var i = rows.length - 1; i >= 0; i--) {
-                                var row = rows[i];
-                                var ts = row[0];
-                                var et = (row[1] || '').toString();
-                                var rowNid = (row[4] || '').toString();
-                                var rowUrl = (row[7] || '').toString();
-                                if (et === 'click' && rowNid === nid && rowUrl && rowUrl.indexOf(sheetId) !== -1) {
-                                    var tms = ts instanceof Date ? ts.getTime() : (new Date(ts)).getTime();
-                                    if (!isNaN(tms) && ((now - tms) / 1000) <= windowSec) {
-                                        try {
-                                            var dbgId = PropertiesService.getScriptProperties().getProperty('ANALYTICS_SPREADSHEET_ID');
-                                            if (dbgId) {
-                                                var dss = SpreadsheetApp.openById(dbgId);
-                                                var ds = dss.getSheetByName('Analytics_Debug');
-                                                if (!ds) ds = dss.insertSheet('Analytics_Debug');
-                                                if ((ds.getLastRow() || 0) < 1) ds.appendRow(['timestamp', 'stage', 'nid', 'rid', 'src', 'eventDetail', 'sheetId', 'referer']);
-                                                ds.appendRow([new Date(), 'dedupe_suppressed_sheet_open', nid, rid, src, eventDetail, sheetId, referer]);
-                                            }
-                                        } catch (err) { /* ignore */ }
-                                        var gifB = Utilities.base64Decode('R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==');
-                                        return ContentService.createBinaryOutput(gifB).setMimeType(ContentService.MimeType.GIF);
-                                    }
-                                }
-                            }
-                        }
-                    }
-                } catch (err) { /* ignore */ }
-            }
-        }
-    } catch (err) { /* ignore */ }
-
-    var target = resolveAnalyticsTarget(nid);
-    var eventTypeValue = 'email_open';
-    try { if ((src || '').toString().toLowerCase() === 'sheet') eventTypeValue = 'sheet_open'; } catch (err) { eventTypeValue = 'email_open'; }
-    var event = { timestamp: new Date(), eventType: eventTypeValue, eventDetail: eventDetail || eventTypeValue, nid: nid, recipientHash: rid, src: src || 'gmail', ua: (params.ua || '') || '', referer: referer };
-    logAnalyticsEvent(target.spreadsheetId, event);
-    var gif = Utilities.base64Decode('R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==');
-    return ContentService.createBinaryOutput(gif).setMimeType(ContentService.MimeType.GIF);
-}
+// Pixel handler removed; pixel tracking is disabled.
 
 function analyticsRedirect(params) {
     var nid = (params.nid || '').toString();
@@ -221,7 +148,7 @@ function signRedirectApi(body) {
     var url = (body.url || body.u || '').toString();
     var nid = (body.nid || '').toString();
     var rid = (body.rid || '').toString();
-    var src = (body.src || 'gmail').toString();
+    var src = (body.src || 'mail').toString();
     var eventDetail = (body.eventDetail || body.detail || 'headline_click').toString();
     if (!url) throw new Error('url required');
     var redirectUrl = buildAnalyticsRedirectUrl(url, nid, rid, src, eventDetail);

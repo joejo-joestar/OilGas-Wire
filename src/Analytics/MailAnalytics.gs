@@ -5,7 +5,7 @@
  */
 
 function buildAnalyticsRedirectUrl(baseUrl, nid, rid, src, eventDetail) {
-    src = (src || 'gmail');
+    src = (src || 'mail');
     eventDetail = (eventDetail || 'headline_click');
     var enc = Utilities.base64Encode(baseUrl);
     var webapp = PropertiesService.getScriptProperties().getProperty('WEBAPP_URL') || '';
@@ -17,12 +17,7 @@ function buildAnalyticsRedirectUrl(baseUrl, nid, rid, src, eventDetail) {
 }
 
 function buildAnalyticsPixelUrl(nid, rid, src, eventDetail) {
-    src = (src || 'gmail');
-    eventDetail = (eventDetail || 'email_open');
-    var webapp = PropertiesService.getScriptProperties().getProperty('WEBAPP_URL') || '';
-    if (!webapp) throw new Error('Set WEBAPP_URL in Script Properties to your webapp URL so analytics pixel can be built');
-    var sep = webapp.indexOf('?') === -1 ? '?' : '&';
-    var sig = '';
-    try { sig = computeHmacHex((nid || '') + '|' + (rid || '') + '|' + (src || '') + '|' + (eventDetail || '')); } catch (e) { sig = ''; }
-    return webapp + sep + 'analytics=open&nid=' + encodeURIComponent(nid || '') + '&rid=' + encodeURIComponent(rid || '') + '&src=' + encodeURIComponent(src) + '&eventDetail=' + encodeURIComponent(eventDetail) + (sig ? '&sig=' + encodeURIComponent(sig) : '');
+    // Pixel tracking disabled because it was not functioning reliably.
+    // Throw so callers can handle absence; callers in AutoMailer already catch errors.
+    throw new Error('Analytics pixel disabled');
 }
