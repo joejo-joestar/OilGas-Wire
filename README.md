@@ -6,6 +6,11 @@
 
 Automatic newsletter generator and RSS/Atom aggregator built on Google Apps Script. It fetches configured feeds, normalizes items into a Google Sheet, and renders a daily HTML newsletter (email + optional web preview).
 
+<p align="center">
+<img src="assets/feed_sheets.png" alt="Feed Sheets" title="Feed Sheets" width="600" >
+<img src="assets/newsletter_full.png" alt="Feed Sheets" title="Feed Sheets" width="600" >
+</p>
+
 ---
 
 ## 👷‍♂️ How it works
@@ -50,6 +55,11 @@ This project includes lightweight analytics for clicks, page views and active ti
 
 - `WebAnalytics.gs` exposes a `doPost(e)` JSON API that accepts `logEvent` and `logActiveTime` actions and forwards them to `logEventApi` / `logActiveTimeApi`.
 - `SharedAnalytics.gs` provides `logAnalyticsEvent()` which writes structured rows to the `Analytics_Events` sheet (and a daily aggregate table).
+
+<p align="center">
+<img src="assets/analytics_sheet.png" alt="Analytics Sheets" title="Analytics Sheets" width="600" >
+</p>
+
 - `Newsletter_Web.html` now includes a `trackClick(payload)` helper that:
   - Uses `google.script.run` when served by HtmlService, or
   - Uses `navigator.sendBeacon` to POST JSON to `WEBAPP_URL`, falling back to `fetch()` if needed.
@@ -73,7 +83,7 @@ This project includes lightweight analytics for clicks, page views and active ti
 
 ## ▶️ How to run / test
 
-Local / clasp (Windows cmd.exe):
+Local / `clasp` (Windows cmd.exe):
 
 ```bat
 npm install
@@ -82,18 +92,18 @@ clasp pull
 clasp push
 ```
 
-In Apps Script editor:
+### In Apps Script editor
 
 1. Set Script properties (`SHEET_ID`, `ANALYTICS_SPREADSHEET_ID`, `WEBAPP_URL`, etc.).
 2. Run `sendDailyNewsletter` to test sending (use `TEST_RECIPIENT` during tests).
 3. Deploy the web app and visit `WEBAPP_URL?preview=1` to preview the full HTML.
 
-Testing analytics:
+### Testing analytics
 
 - Open the web preview and click headlines. The page will attempt to POST tracking payloads (check the browser Network panel).
 - Confirm `Analytics_Events` (sheet) or `Analytics_Debug` (if enabled) receives rows.
 
-Scheduling:
+### Scheduling
 
 - In Apps Script editor: Triggers → Add Trigger → choose `sendDailyNewsletter` → Time-driven → Day timer → set hour.
 
@@ -113,13 +123,19 @@ OilGas-Wire/
     ├── Feed.gs
     ├── Newsletter_Mail.html
     ├── Newsletter_Web.html
+    ├── Styles_Common.html
+    ├── Styles_Email.html
+    ├── Styles_Web.html
+    ├── Triggers.gs
     ├── Web_Preview.html
     ├── Analytics/
     │   ├── MailAnalytics.gs
-    │   ├── WebAnalytics.gs
     │   ├── SheetsAnalytics.gs
-    │   └── SharedAnalytics.gs
+    │   ├── SharedAnalytics.gs
+    │   └── WebAnalytics.gs
     └── Utils/
+        ├── Analysis.gs
+        ├── Debug.gs
         ├── FeedUtils.gs
         ├── SheetUtils.gs
         ├── TextUtils.gs
@@ -131,8 +147,19 @@ OilGas-Wire/
 ## ✨ Features
 
 - Aggregates RSS/Atom feeds and writes normalized rows to Google Sheets.
-- Generates a daily HTML newsletter (email + web preview) with configurable sections.
-- Web preview includes client-side tracking (page views, headline clicks, active time) that writes to an analytics spreadsheet.
+- Generates a daily HTML newsletter (email + web app) with configurable sections.
+
+<p align="center">
+<img src="assets/newsletter_mail.png" alt="Newsletter Mail" title="Newsletter Mail" width="600" >
+</p>
+
+- Web app includes client-side tracking (page views, headline clicks, active time) that writes to an analytics spreadsheet.
+- A lightweight preview UI (`WebPreview.html`) served by the web app for manual QA. Visit the webapp with `?preview=1` to open a date picker and preview rendered HTML for any date.
+
+<p align="center">
+<img src="assets/newsletter_preview.png" alt="Newsletter Preview" title="Newsletter Preview" width="600" >
+</p>
+
 - Smart link handling (extracts URLs from HYPERLINK formulas) and optional signed redirect flow for tracking clicks.
 
 ---
