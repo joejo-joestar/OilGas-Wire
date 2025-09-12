@@ -134,6 +134,26 @@
             } catch (e) { /* ignore */ }
 
             // Capture clicks on article links and log via the JSON API before navigating directly.
+            // Helper: trackClick sends the payload using google.script.run (when available),
+            // navigator.sendBeacon (preferred) or fetch fallback. It keeps calls fire-and-forget.
+            function trackClick(payload) {
+                try {
+                    // If inside HtmlService sandbox, prefer google.script.run
+                    if (window.google && google.script && google.script.run && typeof google.script.run.logEventApi === 'function') {
+                        try { google.script.run.withFailureHandler(function (err) { console.debug('logEventApi fail', err); }).withSuccessHandler(function () { console.debug('logEventApi ok'); }).logEventApi(payload); return; } catch (e) { console.debug('google.script.run error', e); }
+                    }
+
+                    // Otherwise post to the webapp endpoint. Use sendBeacon when available for reliability
+                    var endpoint = '<?= webappUrl ?>' || (location.origin + location.pathname);
+                    var body = JSON.stringify(Object.assign({ action: 'logEvent' }, payload));
+                    if (navigator && navigator.sendBeacon) {
+                        try { var blob = new Blob([body], { type: 'application/json' }); navigator.sendBeacon(endpoint, blob); return; } catch (e) { /* fall through to fetch */ }
+                    }
+                    // fetch fallback (keepalive where supported)
+                    try { fetch(endpoint, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: body, keepalive: true }).catch(function () { }); } catch (e) { /* ignore */ }
+                } catch (e) { /* ignore */ }
+            }
+
             document.addEventListener('click', function (ev) {
                 var a = ev.target.closest && ev.target.closest('a');
                 if (!a) return;
@@ -153,21 +173,8 @@
                         ua: (navigator && navigator.userAgent) || '',
                         referer: location.href
                     };
-                    // If running inside Apps Script HtmlService, use google.script.run to avoid CORS
-                    if (window.google && google.script && google.script.run && typeof google.script.run.logEventApi === 'function') {
-                        try {
-                            google.script.run.withFailureHandler(function (err) { console.debug('logEventApi fail', err); }).withSuccessHandler(function () { console.debug('logEventApi ok'); }).logEventApi(payload);
-                        } catch (e) { console.debug('google.script.run error', e); }
-                    } else {
-                        // Fall back to sendBeacon/fetch to the webapp endpoint
-                        try {
-                            var endpoint = '<?= webappUrl ?>' || (location.origin + location.pathname);
-                            var body = JSON.stringify(Object.assign({ action: 'logEvent' }, payload));
-                            if (navigator && navigator.sendBeacon) {
-                                try { var blob = new Blob([body], { type: 'application/json' }); navigator.sendBeacon(endpoint, blob); } catch (e) { fetch(endpoint, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: body, keepalive: true }).catch(function () { }); }
-                            } else { try { fetch(endpoint, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: body, keepalive: true }).catch(function () { }); } catch (e) { /* ignore */ } }
-                        } catch (e) { /* ignore */ }
-                    }
+                    // Delegate sending to trackClick helper (it uses google.script.run / sendBeacon / fetch)
+                    trackClick(payload);
                     // If link opens in a new tab/window, don't prevent default — let browser open it.
                     var targetAttr = a.getAttribute('target');
                     if (targetAttr && targetAttr.toLowerCase() === '_blank') {
@@ -176,6 +183,31 @@
                     ev.preventDefault();
                     window.location.href = href;
                 } catch (e) { /* fallback: let link behave normally */ }
+            }, true);
+
+            // Also listen for auxclick (middle-click / wheel click) which some browsers fire
+            // instead of a regular 'click' event for opening links in a new tab.
+            document.addEventListener('auxclick', function (ev) {
+                try {
+                    var a = ev.target.closest && ev.target.closest('a');
+                    if (!a) return;
+                    var href = a.getAttribute('href') || '';
+                    if (!href || !/^https?:\/\//i.test(href)) return;
+                    var eventDetail = 'web_headline_click';
+                    try { if (typeof feedSheetUrl !== 'undefined' && feedSheetUrl && href.indexOf(feedSheetUrl) === 0) eventDetail = 'web_sheet_click'; } catch (e) { /* ignore */ }
+                    var payload = {
+                        eventType: 'click',
+                        eventDetail: eventDetail,
+                        nid: nid,
+                        rid: rid || '',
+                        src: 'web',
+                        url: href,
+                        ua: (navigator && navigator.userAgent) || '',
+                        referer: location.href
+                    };
+                    // Fire-and-forget tracking; do not prevent default so the browser opens the link normally.
+                    trackClick(payload);
+                } catch (e) { /* ignore */ }
             }, true);
         })();
     </script>
