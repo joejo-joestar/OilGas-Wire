@@ -25,7 +25,7 @@ Key properties (set in Project Settings → Script properties):
 | `SHEET_ID`                 | ID of the Google Sheet that stores feed tabs and feed data                           | Required                                   |
 | `ANALYTICS_SPREADSHEET_ID` | Spreadsheet ID where analytics events are logged (Analytics_Events, Analytics_Daily) | Recommended (for tracking)                 |
 | `SEND_TO`                  | Comma-separated list of recipient emails for the newsletter                          | Required unless `TEST_RECIPIENT` is set    |
-| `TEST_RECIPIENT`           | Sends newsletter only to this address (overrides `SEND_TO`) — useful for testing     | Optional (use for safe testing)            |
+| `TEST_RECIPIENT`           | Sends newsletter only to this address (overrides `SEND_TO`), useful for testing      | Optional (use for safe testing)            |
 | `WEBAPP_URL`               | Deployed Web App URL used for the web preview and analytics POST fallback            | Optional (set to enable web preview links) |
 | `MAX_ITEMS_PER_SECTION`    | How many items to show in each section in the email preview (default: 6)             | Optional (default: 6)                      |
 
