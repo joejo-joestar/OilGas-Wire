@@ -18,10 +18,9 @@ function logAnalyticsEvent(targetSpreadsheetId, eventObj) {
         var sheet = ss.getSheetByName(ANALYTICS_DEFAULT_SHEET);
         if (!sheet) {
             sheet = ss.insertSheet(ANALYTICS_DEFAULT_SHEET);
-            // Add a simple 'time' column (seconds) to simplify dashboards; populated for active_time events
-            sheet.appendRow(['timestamp', 'eventType', 'eventDetail', 'time', 'nid', 'recipientHash', 'src', 'url', 'ua', 'referer', 'extra']);
+            sheet.appendRow(['timestamp', 'src', 'eventType', 'eventDetail', 'time', 'nid', 'recipientHash', 'url', 'ua', 'referer', 'extra']);
         }
-        // time: prefer explicit eventObj.time, fallback to eventObj.extra.seconds when present
+        if ((sheet.getLastRow() || 0) < 1) sheet.appendRow(['timestamp', 'src', 'eventType', 'eventDetail', 'time', 'nid', 'recipientHash', 'url', 'ua', 'referer', 'extra']);
         var timeVal = '';
         try {
             if (typeof eventObj.time !== 'undefined' && eventObj.time !== null) timeVal = Number(eventObj.time) || '';
@@ -29,12 +28,12 @@ function logAnalyticsEvent(targetSpreadsheetId, eventObj) {
         } catch (e) { timeVal = ''; }
         var row = [
             eventObj.timestamp || new Date(),
+            eventObj.src || '',
             eventObj.eventType || '',
             eventObj.eventDetail || (eventObj.detail || '') || '',
             timeVal,
             eventObj.nid || '',
             eventObj.recipientHash || '',
-            eventObj.src || '',
             eventObj.url || '',
             eventObj.ua || '',
             eventObj.referer || '',
@@ -118,7 +117,7 @@ function resolveAnalyticsTarget(nid) {
 function initAnalyticsSpreadsheet() {
     var ss = SpreadsheetApp.openById(PropertiesService.getScriptProperties().getProperty('ANALYTICS_SPREADSHEET_ID'));
     var s = ss.getSheetByName(ANALYTICS_DEFAULT_SHEET);
-    if (!s) ss.insertSheet(ANALYTICS_DEFAULT_SHEET).appendRow(['timestamp', 'eventType', 'eventDetail', 'time', 'nid', 'recipientHash', 'src', 'url', 'ua', 'referer', 'extra']);
+    if (!s) ss.insertSheet(ANALYTICS_DEFAULT_SHEET).appendRow(['timestamp', 'src', 'eventType', 'eventDetail', 'time', 'nid', 'recipientHash', 'url', 'ua', 'referer', 'extra']);
     var d = ss.getSheetByName(ANALYTICS_DAILY_SHEET);
     if (!d) ss.insertSheet(ANALYTICS_DAILY_SHEET).appendRow(['date', 'eventType', 'nid', 'count']);
     return true;

@@ -15,9 +15,3 @@ function buildAnalyticsRedirectUrl(baseUrl, nid, rid, src, eventDetail) {
     try { sig = computeHmacHex((nid || '') + '|' + (rid || '') + '|' + (baseUrl || '') + '|' + (src || '') + '|' + (eventDetail || '')); } catch (e) { sig = ''; }
     return webapp + sep + 'analytics=r&target=' + encodeURIComponent(enc) + '&nid=' + encodeURIComponent(nid || '') + '&rid=' + encodeURIComponent(rid || '') + '&src=' + encodeURIComponent(src) + '&eventDetail=' + encodeURIComponent(eventDetail) + (sig ? '&sig=' + encodeURIComponent(sig) : '');
 }
-
-function buildAnalyticsPixelUrl(nid, rid, src, eventDetail) {
-    // Pixel tracking disabled because it was not functioning reliably.
-    // Throw so callers can handle absence; callers in AutoMailer already catch errors.
-    throw new Error('Analytics pixel disabled');
-}
