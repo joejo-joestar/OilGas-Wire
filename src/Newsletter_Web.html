@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Newsletter - Web View</title>
+    <?!= include('Styles_Common') ?>
+    <?!= include('Styles_Web') ?>
+</head>
+
+<body>
+    <div class="container">
+        <div class="header">
+            <img src="https://alshirawi.com/wp-content/uploads/2022/02/Al-Shirawi-Equipment-Co_White-Logo-01.png"
+                alt="Logo">
+            <div class="header-right">
+                <h1>Business Excellence Newsletter</h1>
+                <div class="date-range">
+                    <?= dateRangeText ?>
+                </div>
+            </div>
+        </div>
+
+        <div class="controls">
+            <input id="searchInput" type="search" placeholder="Search headlines, sources..."
+                aria-label="Search newsletter" />
+            <select id="sectionSelect">
+                <option value="">All sections</option>
+                <? for (var s=0; s < sections.length; s++) { var sec = sections[s]; ?>
+                <option value="<?= s ?>">
+                    <?= sec.title ?>
+                </option>
+                <? } ?>
+            </select>
+            <button onclick="resetFilters()" class="btn">Reset</button>
+        </div>
+
+        <div id="sectionsRoot">
+            <? if (sections && sections.length) { ?>
+            <? for (var s = 0; s < sections.length; s++) { var sec = sections[s]; ?>
+            <div class="section-card" data-section-index="<?= s ?>">
+                <div class="section-header">
+                    <h2>
+                        <?= sec.title ?>
+                    </h2>
+                </div>
+                <? if (sec.items && sec.items.length) { ?>
+                <ul class="items">
+                    <? for (var i = 0; i < sec.items.length; i++) { var it = sec.items[i]; ?>
+                    <li class="item">
+                        <a class="headline" href="<?= it.link ?>" target="_blank" rel="noopener noreferrer">
+                            <?= it.headline ?>
+                        </a>
+                        <div class="meta">
+                            <?= it.source ?> •
+                            <?= it.pubDateStr ?>
+                        </div>
+                    </li>
+                    <? } ?>
+                </ul>
+                <? } else { ?>
+                <div style="padding:8px;color:#666">No items in this section for the selected period.</div>
+                <? } ?>
+            </div>
+            <? } ?>
+            <? } else { ?>
+            <div class="no-results">No items found for this period.</div>
+            <? } ?>
+        </div>
+    </div>
+
+    <script>
+        (function () {
+            var input = document.getElementById('searchInput');
+            var select = document.getElementById('sectionSelect');
+            input.addEventListener('input', applyFilters);
+            select.addEventListener('change', applyFilters);
+
+            function normalize(s) { return (s || '').toString().toLowerCase(); }
+
+            function applyFilters() {
+                var q = normalize(input.value).trim();
+                var selected = select.value;
+                var sections = document.querySelectorAll('#sectionsRoot .section-card');
+                var anyVisible = false;
+                sections.forEach(function (sec) {
+                    var secIndex = sec.getAttribute('data-section-index');
+                    if (selected && selected !== secIndex) { sec.style.display = 'none'; return; }
+                    var items = sec.querySelectorAll('.item');
+                    var visibleCount = 0;
+                    items.forEach(function (item) {
+                        var text = normalize(item.innerText || item.textContent);
+                        var show = !q || text.indexOf(q) !== -1;
+                        item.style.display = show ? '' : 'none';
+                        if (show) visibleCount++;
+                    });
+                    sec.style.display = (visibleCount > 0) ? '' : 'none';
+                    if (visibleCount > 0) anyVisible = true;
+                });
+
+                var no = document.querySelector('.no-results');
+                if (!anyVisible) {
+                    if (!no) {
+                        no = document.createElement('div'); no.className = 'no-results'; no.textContent = 'No matching items.'; document.getElementById('sectionsRoot').appendChild(no);
+                    }
+                } else if (no) { no.parentNode.removeChild(no); }
+            }
+
+            window.resetFilters = function () { input.value = ''; select.value = ''; applyFilters(); }
+        })();
+    </script>
+    <div class="footer">
+        This newsletter is generated automatically from the <a href="<?= feedSheetUrl ?>" target="_blank">news
+            sheet</a>.
+    </div>
+
+    <script>
+        // On page load, ping analytics to record a page_view for the newsletter webapp
+        (function () {
+            try {
+                var nid = '<?= nid ?>';
+                var rid = ''; // optional visitor id (left blank for anonymous)
+                var feedSheetUrl = '<?= feedSheetUrl ?>';
+                var webappUrl = '<?= webappUrl ?>';
+                var u = location.href;
+                var url = (location.origin + location.pathname) + '?analytics=ping&nid=' + encodeURIComponent(nid) + '&rid=' + encodeURIComponent(rid) + '&u=' + encodeURIComponent(u) + '&src=' + encodeURIComponent('web') + '&eventDetail=' + encodeURIComponent('page_view');
+                // Use navigator.sendBeacon when available
+                if (navigator && navigator.sendBeacon) {
+                    navigator.sendBeacon(url, null);
+                } else {
+                    var i = new Image(); i.src = url; // fallback
+                }
+            } catch (e) { /* ignore */ }
+
+            // Capture clicks on article links and log via the JSON API before navigating directly.
+            // Helper: trackClick sends the payload using google.script.run (when available),
+            // navigator.sendBeacon (preferred) or fetch fallback. It keeps calls fire-and-forget.
+            function trackClick(payload) {
+                try {
+                    // If inside HtmlService sandbox, prefer google.script.run
+                    if (window.google && google.script && google.script.run && typeof google.script.run.logEventApi === 'function') {
+                        try { google.script.run.withFailureHandler(function (err) { console.debug('logEventApi fail', err); }).withSuccessHandler(function () { console.debug('logEventApi ok'); }).logEventApi(payload); return; } catch (e) { console.debug('google.script.run error', e); }
+                    }
+
+                    // Otherwise post to the webapp endpoint. Use sendBeacon when available for reliability
+                    var endpoint = '<?= webappUrl ?>' || (location.origin + location.pathname);
+                    var body = JSON.stringify(Object.assign({ action: 'logEvent' }, payload));
+                    if (navigator && navigator.sendBeacon) {
+                        try { var blob = new Blob([body], { type: 'application/json' }); navigator.sendBeacon(endpoint, blob); return; } catch (e) { /* fall through to fetch */ }
+                    }
+                    // fetch fallback (keepalive where supported)
+                    try { fetch(endpoint, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: body, keepalive: true }).catch(function () { }); } catch (e) { /* ignore */ }
+                } catch (e) { /* ignore */ }
+            }
+
+            document.addEventListener('click', function (ev) {
+                var a = ev.target.closest && ev.target.closest('a');
+                if (!a) return;
+                var href = a.getAttribute('href') || '';
+                if (!href || !/^https?:\/\//i.test(href)) return;
+                try {
+                    // Determine eventDetail: if this is the feed sheet link, mark specially
+                    var eventDetail = 'web_headline_click';
+                    try { if (typeof feedSheetUrl !== 'undefined' && feedSheetUrl && href.indexOf(feedSheetUrl) === 0) eventDetail = 'web_sheet_click'; } catch (e) { /* ignore */ }
+                    var payload = {
+                        eventType: 'click',
+                        eventDetail: eventDetail,
+                        nid: nid,
+                        rid: rid || '',
+                        src: 'web',
+                        url: href,
+                        ua: (navigator && navigator.userAgent) || '',
+                        referer: location.href
+                    };
+                    // Delegate sending to trackClick helper (it uses google.script.run / sendBeacon / fetch)
+                    trackClick(payload);
+                    // If link opens in a new tab/window, don't prevent default — let browser open it.
+                    var targetAttr = a.getAttribute('target');
+                    if (targetAttr && targetAttr.toLowerCase() === '_blank') {
+                        return;
+                    }
+                    ev.preventDefault();
+                    window.location.href = href;
+                } catch (e) { /* fallback: let link behave normally */ }
+            }, true);
+
+            // Also listen for auxclick (middle-click / wheel click) which some browsers fire
+            // instead of a regular 'click' event for opening links in a new tab.
+            document.addEventListener('auxclick', function (ev) {
+                try {
+                    var a = ev.target.closest && ev.target.closest('a');
+                    if (!a) return;
+                    var href = a.getAttribute('href') || '';
+                    if (!href || !/^https?:\/\//i.test(href)) return;
+                    var eventDetail = 'web_headline_click';
+                    try { if (typeof feedSheetUrl !== 'undefined' && feedSheetUrl && href.indexOf(feedSheetUrl) === 0) eventDetail = 'web_sheet_click'; } catch (e) { /* ignore */ }
+                    var payload = {
+                        eventType: 'click',
+                        eventDetail: eventDetail,
+                        nid: nid,
+                        rid: rid || '',
+                        src: 'web',
+                        url: href,
+                        ua: (navigator && navigator.userAgent) || '',
+                        referer: location.href
+                    };
+                    // Fire-and-forget tracking; do not prevent default so the browser opens the link normally.
+                    trackClick(payload);
+                } catch (e) { /* ignore */ }
+            }, true);
+        })();
+    </script>
+    <script>
+        // Active-time tracking: count seconds when page is visible and focused (active users only).
+        (function () {
+            var nid = '<?= nid ?>';
+            var rid = ''; // anonymous for web
+            var webappUrl = '<?= webappUrl ?>' || (location.origin + location.pathname);
+            var sendInterval = 30 * 1000; // send every 30s
+            var accumulated = 0; // milliseconds
+            var runningSince = null;
+            var lastSent = Date.now();
+
+            function isVisibleAndFocused() {
+                // Treat the page as active when it's visible to the user. Focus is helpful
+                // but not required (e.g. user may read while another window has focus).
+                try { return document.visibilityState === 'visible' || document.hasFocus(); } catch (e) { return true; }
+            }
+
+            function startRunning() { if (!runningSince) runningSince = Date.now(); }
+            function stopRunning() {
+                if (runningSince) { accumulated += Date.now() - runningSince; runningSince = null; }
+            }
+
+            // send active time payload to server
+            function sendActivePing(final) {
+                // compute seconds to report and reset accumulator when sent
+                var now = Date.now();
+                if (runningSince) { accumulated += now - runningSince; runningSince = now; }
+                var seconds = Math.floor(accumulated / 1000);
+                if (seconds <= 0 && !final) return; // nothing to send
+                var payload = { action: 'logActiveTime', nid: nid || '', rid: rid || '', seconds: seconds, ua: (navigator && navigator.userAgent) || '', referer: location.href };
+                accumulated = 0; // reset local counter after scheduling send
+
+                // Prefer google.script.run when available inside Apps Script HtmlService
+                if (window.google && google.script && google.script.run && typeof google.script.run.logActiveTimeApi === 'function') {
+                    try { google.script.run.withFailureHandler(function () { }).withSuccessHandler(function () { }).logActiveTimeApi(payload); } catch (e) { /* ignore */ }
+                    return;
+                }
+
+                // Use sendBeacon when possible for reliability on unload
+                try {
+                    var endpoint = webappUrl;
+                    var body = JSON.stringify(payload);
+                    if (navigator && navigator.sendBeacon) {
+                        try { var blob = new Blob([body], { type: 'application/json' }); navigator.sendBeacon(endpoint, blob); return; } catch (e) { /* fall through to fetch */ }
+                    }
+                    // fallback to fetch (keepalive flag where supported)
+                    try { fetch(endpoint, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: body, keepalive: true }).catch(function () { }); } catch (e) { /* ignore */ }
+                } catch (e) { /* ignore */ }
+            }
+
+            // Visibility and focus tracking
+            document.addEventListener('visibilitychange', function () { if (isVisibleAndFocused()) startRunning(); else stopRunning(); });
+            window.addEventListener('focus', function () { if (isVisibleAndFocused()) startRunning(); });
+            window.addEventListener('blur', function () { stopRunning(); });
+
+            // Treat user input as sign of activity; start timer on interaction
+            ['mousemove', 'keydown', 'scroll', 'touchstart'].forEach(function (ev) { document.addEventListener(ev, function () { if (isVisibleAndFocused()) startRunning(); }, { passive: true }); });
+
+            // Periodic sender
+            var intervalId = setInterval(function () { try { sendActivePing(false); } catch (e) { } }, sendInterval);
+
+            // Final send on unload
+            window.addEventListener('beforeunload', function (e) { try { sendActivePing(true); } catch (err) { } });
+            // Also attempt on pagehide which fires in some browsers
+            window.addEventListener('pagehide', function () { try { sendActivePing(true); } catch (err) { } });
+
+            // start running initially if visible (or assume active on older clients)
+            try { if (isVisibleAndFocused()) startRunning(); else { /* no-op */ } } catch (e) { startRunning(); }
+        })();
+    </script>
+</body>
+
+</html>

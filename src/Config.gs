@@ -41,16 +41,16 @@ var SHEET_ID = null;
  */
 var CONFIG = [
     {
-        category: 'Unified News',
-        sheetName: 'Unified News',
+        category: 'Oil & Gas General News',
+        sheetName: 'Oil & Gas General News',
         headers: ['Date', 'Headline', 'Company', 'Price Info.', 'Region', 'Snippet', 'Source', 'Link'],
         feeds: [
-            // 'https://oilprice.com/rss/main',
+            'https://oilprice.com/rss/main',
             'https://www.saudigulfprojects.com/feed/',
             'https://www.offshore-technology.com/feed/',
-            // 'https://www.rigzone.com/news/rss/rigzone_original.aspx',
+            'https://www.rigzone.com/news/rss/rigzone_original.aspx',
             'https://www.offshore-energy.biz/feed/',
-            // 'https://www.naturalgasworld.com/rss'
+            'https://www.naturalgasworld.com/rss'
         ],
         googleNewsQueries: [
             // general project & contract award patterns
@@ -85,7 +85,6 @@ var CONFIG = [
             "oil and gas pipeline repair contract awarded",
             "oil and gas pipeline coating contract awarded",
             "oil and gas pipeline welding contract awarded",
-            "oil and gas pipeline tie-in contract awarded",
 
             "oil and gas refinery contract awarded",
             "oil and gas refinery maintenance contract awarded",
@@ -135,17 +134,25 @@ var CONFIG = [
             "oil and gas contract value",
             "oil and gas procurement",
             "oil and gas contract announcement"
-        ]
+        ],
+        keywordInclusions: [
+            "contract", "contracts", "contracted", "awarded", "award", "awards", "procurement", "procurements",
+            "tender", "tenders", "bid", "bids", "bidder", "bidders", "agreement", "agreements",
+            "memorandum of understanding", "mou", "epc", "engineering procurement construction",
+            "feed", "final investment decision", "fid", "finance", "funding", "sanctioned", "approval",
+            "project", "projects", "offshore", "onshore", "commissioning", "commissioned", "operations", "startup", "started operations",
+            "pipeline", "refinery", "well", "drilling", "liquid mud", "process package", "custom manufacturing",
+            "storage tank", "chemical"
+        ],
     },
     {
-        category: 'Oil, Gas, and Raw Materials',
-        sheetName: 'Oil, Gas, and Raw Materials',
+        category: 'Commodity and Raw Material Prices',
+        sheetName: 'Commodity and Raw Material Prices',
         headers: ['Date', 'Headline', 'Commodity', 'Price Info.', 'Region', 'Snippet', 'Source', 'Link'],
         feeds: [
             'https://oilprice.com/rss/main',
             'https://www.investing.com/rss/news_11.rss',
             'https://www.investing.com/rss/news_25.rss',
-            // 'https://www.naturalgasworld.com/rss'
         ],
         googleNewsQueries: [
             "crude oil price",
@@ -159,14 +166,20 @@ var CONFIG = [
             "drill pipe price",
             "diesel fuel price",
             "oil and gas chemical price"
-        ]
+        ],
+        keywordInclusions: [
+            "price", "prices", "pricing", "rise", "rises", "rising", "increase", "increases", "increasing",
+            "fall", "falls", "falling", "decrease", "decreases", "decreasing", "gain", "gains", "gaining",
+            "drop", "drops", "dropping", "decline", "declines", "declining", "surge", "surges", "surging",
+            "plunge", "plunges", "plunging", "slump", "slumps", "slumping"
+        ],
     },
     {
         category: 'Leadership Changes',
         sheetName: 'Leadership Changes',
         headers: ['Date', 'Headline', 'Industry', 'Company / Individual', 'Region', 'Snippet', 'Source', 'Link'],
         feeds: [
-            // 'https://www.offshore-technology.com/feed/',
+            'https://www.offshore-technology.com/feed/',
         ],
         googleNewsQueries: [
             "ceo appointed oil and gas",
@@ -194,6 +207,12 @@ var CONFIG = [
             "water treatment executive appointment",
             "water sector leadership transition"
         ],
+        keywordInclusions: [
+            "ceo", "chief executive officer", "cfo", "chief financial officer", "chairman", "board member", "board of directors",
+            "executive", "leadership", "managing director", "md", "president", "vice president", "vp",
+            "appointed", "appoints", "named", "names", "joins", "joined", "promoted", "promotes",
+            "resigns", "resigned", "steps down", "steps aside", "retires", "transition", "transitions", "change", "changes", "reshuffle", "reshuffles"
+        ],
     },
     {
         category: 'Mergers, Acquisitions, and Joint Ventures',
@@ -219,6 +238,11 @@ var CONFIG = [
             "water treatment jv",
             "water sector strategic partnership"
         ],
+        keywordInclusions: [
+            "merger", "mergers", "acquisition", "acquisitions", "acquires", "acquire", "buyout", "buyouts",
+            "joint venture", "joint ventures", "jv", "jvs", "strategic partnership", "strategic partnerships", "partnership", "partnerships",
+            "collaboration", "collaborations", "alliance", "alliances"
+        ],
     }
 ];
 
@@ -239,7 +263,7 @@ var KNOWN_COMPANIES = [
     'Sinopec', 'CNPC', 'CNOOC', 'PetroChina', 'Lukoil', 'Rosneft', 'Gazprom', 'Repsol', 'Pertamina', 'PTT', 'YPF',
 
     // Oilfield services & contractors
-    'Halliburton', 'Schlumberger', 'Baker Hughes', 'Weatherford', 'Technip', 'TechnipFMC', 'Saipem', 'Petrofac', 'Technomak', 'Subsea7', 'McDermott', 'KBR', 'Worley', 'Jacobs', 'Fluor', 'Bechtel', 'Aker Solutions',
+    'Halliburton', 'Schlumberger', 'SLB', 'Baker Hughes', 'Weatherford', 'Technip', 'TechnipFMC', 'Saipem', 'Petrofac', 'Technomak', 'Subsea7', 'McDermott', 'KBR', 'Worley', 'Jacobs', 'Fluor', 'Bechtel', 'Aker Solutions', 'Taqa', 'NESR', 'Foster Wheeler', 'Wood', 'Transocean', 'Noble Corporation', 'Valaris', 'Diamond Offshore', 'EnscoRowan', 'Seadrill', 'KCA Deutag', 'National Oilwell Varco', 'NOV', 'Emerson', 'Schneider Electric', 'Sensia', 'ABB', 'Siemens Energy', 'GE Oil & Gas', 'BASF', 'Dow Chemical', 'DuPont', 'Ceco Environmental', 'Ecolab',
 
     // Energy / LNG / midstream
     'Sapura Energy', 'Golar', 'Mitsui', 'JGC', 'Chiyoda', 'KBR', 'Wood', 'McDermott International', 'Bloom Energy',

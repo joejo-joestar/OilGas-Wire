@@ -1,0 +1,98 @@
+<style>
+    /* Email-specific styles kept separate from shared styles. Use table-based header layout for Gmail compatibility. */
+    .header {
+        background: #0a164e;
+        color: #fff;
+        padding: 18px 20px;
+        border-radius: 12px;
+        margin-bottom: 12px;
+        overflow: hidden;
+    }
+
+    .header table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+    .header td {
+        vertical-align: middle;
+        padding: 0;
+    }
+
+    .header .logo-cell {
+        padding-left: 2%;
+        width: 150px;
+        white-space: nowrap;
+    }
+
+    .header .title-cell {
+        padding-left: 5%;
+        padding-right: 5%;
+        text-align: center;
+    }
+
+    .header .date-cell {
+        padding-right: 2%;
+        text-align: right;
+        width: 150px;
+        white-space: nowrap;
+    }
+
+    .header img {
+        max-width: 150px;
+        height: auto;
+        display: block;
+    }
+
+    .header h1 {
+        margin: 0;
+        font-size: 20px;
+        font-weight: 600;
+    }
+
+    /* Make newsletter H1 bolder in email as well */
+    .header h1 {
+        font-size: 22px;
+        font-weight: 700;
+    }
+
+    .header p {
+        margin: 0;
+        font-size: 15px;
+        opacity: 0.95;
+    }
+
+    .section-header h2 small a {
+        color: #fff;
+        font-size: 12px !important;
+        text-decoration: none !important;
+    }
+
+    .section-header h2 small a:hover {
+        color: #fff;
+        text-decoration: underline !important;
+    }
+
+    /* Stack header table cells on very small screens for email clients that support media queries */
+    @media screen and (max-width: 540px) {
+
+        .header table,
+        .header tbody,
+        .header tr {
+            display: block !important;
+            width: 100% !important;
+        }
+
+        .header td {
+            display: block !important;
+            width: 100% !important;
+            text-align: left !important;
+            padding: 6px 0 0 0 !important;
+        }
+
+        .header .title-cell {
+            padding-top: 0 !important;
+            padding-left: 0 !important;
+        }
+    }
+</style>

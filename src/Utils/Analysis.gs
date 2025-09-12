@@ -392,11 +392,106 @@ function isAboutOilAndGas(item) {
  * @param {Array<string>} queries
  * @return {boolean}
  */
-function matchesQueries(item, queries) {
+/**
+ * Return true if the item should be included for the category based on
+ * optional feed-level queries and explicit keyword inclusion tokens.
+ *
+ * Rules:
+ * - If item is not about Oil & Gas at all, return false.
+ * - If `keywordInclusions` is provided, require at least one inclusion token
+ *   to appear in the title/summary/content (case-insensitive). This reduces
+ *   false positives coming from noisy sources like generic RSS or Google News.
+ * - Otherwise, if `queries` (search queries used to fetch a feed) are provided,
+ *   accept when any query substring appears in the item text.
+ * - If neither is provided, accept the item as it passed the isAboutOilAndGas check.
+ *
+ * @param {FeedItem} item
+ * @param {Array<string>=} queries optional query strings (e.g. google news queries)
+ * @param {Array<string>=} keywordInclusions optional inclusion tokens (phrases or words)
+ * @param {Array<string>=} keywordExclusions optional exclusion tokens — any match here rejects the item
+ * @param {string=} feedUrl optional feedUrl (not used for matching but accepted)
+ * @return {boolean}
+ */
+function matchesQueries(item, queries, keywordInclusions, keywordExclusions, feedUrl) {
     if (!isAboutOilAndGas(item)) return false;
-    if (!queries || queries.length === 0) return true;
-    var hay = ((item.title || '') + ' ' + (item.summary || '')).toLowerCase();
-    return queries.some(function (q) { return hay.indexOf(q.toLowerCase()) !== -1; });
+    var hay = ((item.title || '') + ' ' + (item.summary || '') + ' ' + (item.content || '')).toLowerCase();
+    // If explicit keywordExclusions not supplied, build it as the union of
+    // all other categories' keywordInclusions (from global CONFIG).
+    // This allows config to only declare keywordInclusions and rely on
+    // runtime computed exclusions.
+    try {
+        if ((!keywordExclusions || !keywordExclusions.length) && typeof CONFIG !== 'undefined' && CONFIG && CONFIG.length) {
+            var _builtEx = [];
+            for (var _ci = 0; _ci < CONFIG.length; _ci++) {
+                var _cat = CONFIG[_ci];
+                if (!_cat) continue;
+                var _incs = _cat.keywordInclusions || [];
+                for (var _ii = 0; _ii < _incs.length; _ii++) {
+                    var _t = (_incs[_ii] || '').toString().toLowerCase().trim();
+                    if (!_t) continue;
+                    _builtEx.push(_t);
+                }
+            }
+            // Remove tokens that belong to the current category's inclusions
+            var _cur = (keywordInclusions || []).map(function (x) { return (x || '').toString().toLowerCase().trim(); });
+            var _seen = {};
+            var _out = [];
+            for (var _bi = 0; _bi < _builtEx.length; _bi++) {
+                var _tok = _builtEx[_bi];
+                if (!(_tok || '')) continue;
+                if (_cur.indexOf(_tok) !== -1) continue;
+                if (_seen[_tok]) continue;
+                _seen[_tok] = true;
+                _out.push(_tok);
+            }
+            keywordExclusions = _out;
+        }
+    } catch (e) { /* ignore CONFIG errors and continue with provided exclusions (if any) */ }
+    // If explicit keyword exclusions are supplied, reject immediately when any match is found.
+    if (keywordExclusions && keywordExclusions.length) {
+        for (var xe = 0; xe < keywordExclusions.length; xe++) {
+            var xTok = (keywordExclusions[xe] || '').toString().toLowerCase().trim();
+            if (!xTok) continue;
+            if (hay.indexOf(xTok) !== -1) return false;
+            try {
+                if (/^[\w\-]+$/.test(xTok)) {
+                    var reX = new RegExp('\\b' + escapeRegExp(xTok) + '\\b');
+                    if (reX.test(hay)) return false;
+                }
+            } catch (e) { /* ignore regex errors */ }
+        }
+    }
+
+    // If explicit keyword inclusions are supplied, require at least one to be present.
+    if (keywordInclusions && keywordInclusions.length) {
+        for (var k = 0; k < keywordInclusions.length; k++) {
+            var tok = (keywordInclusions[k] || '').toString().toLowerCase().trim();
+            if (!tok) continue;
+            if (hay.indexOf(tok) !== -1) return true;
+            // also try a word-boundary regex for single-token words for safer matches
+            try {
+                if (/^[\w\-]+$/.test(tok)) {
+                    var re = new RegExp('\\b' + escapeRegExp(tok) + '\\b');
+                    if (re.test(hay)) return true;
+                }
+            } catch (e) { /* ignore regex errors and continue */ }
+        }
+        // No inclusion tokens matched -> reject
+        return false;
+    }
+
+    // Fallback to matching the queries (substring search)
+    if (queries && queries.length) {
+        for (var i = 0; i < queries.length; i++) {
+            var q = (queries[i] || '').toString().toLowerCase().trim();
+            if (!q) continue;
+            if (hay.indexOf(q) !== -1) return true;
+        }
+        return false;
+    }
+
+    // Neither inclusions nor queries provided — accept by default since isAboutOilAndGas passed
+    return true;
 }
 
 /**
