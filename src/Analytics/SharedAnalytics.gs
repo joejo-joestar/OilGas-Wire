@@ -1,7 +1,3 @@
-/**
- * SharedAnalytics.gs
- * Common helpers used by mail- and webapp-analytics.
- */
 var ANALYTICS_DEFAULT_SHEET = 'Analytics_Events';
 var ANALYTICS_DAILY_SHEET = 'Analytics_Daily';
 

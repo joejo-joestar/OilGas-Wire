@@ -15,7 +15,6 @@ function renderNewsletterHtml(data) {
     tpl.sections = data.sections || [];
     tpl.dateRangeText = data.dateRangeText || '';
     tpl.fullNewsletterUrl = data.fullNewsletterUrl || '';
-    // feedSheetUrl and nid are used by templates for monitoring/analytics
     tpl.feedSheetUrl = data.feedSheetUrl || ('https://docs.google.com/spreadsheets/d/' + getSheetId() + '/');
     tpl.nid = data.nid || '';
     return tpl.evaluate().getContent();
@@ -42,7 +41,7 @@ function renderNewsletterWebHtml(data) {
             var sep_fs = rawFeedSheetUrl.indexOf('?') === -1 ? '?' : '&';
             tpl.feedSheetUrl = rawFeedSheetUrl + sep_fs + 'nid=' + encodeURIComponent(nid_for_web) + '&rid=&src=' + encodeURIComponent(src_web) + '&eventDetail=' + encodeURIComponent(eventDetail_web) + (sig_web ? '&sig=' + encodeURIComponent(sig_web) : '');
         }
-    } catch (e) { /* best-effort; keep raw url on failure */ }
+    } catch (e) {}
     tpl.nid = data.nid || '';
     // provide deployed webapp URL to the template so client JS can call the JSON API reliably
     try { tpl.webappUrl = data.webappUrl || PropertiesService.getScriptProperties().getProperty('WEBAPP_URL') || ''; } catch (e) { tpl.webappUrl = data.webappUrl || ''; }
