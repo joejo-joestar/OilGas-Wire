@@ -41,8 +41,8 @@ var SHEET_ID = null;
  */
 var CONFIG = [
     {
-        category: 'Oil & Gas General News',
-        sheetName: 'Oil & Gas General News',
+        category: 'Oil & Gas News',
+        sheetName: 'Oil & Gas News',
         headers: ['Date', 'Headline', 'Company', 'Price Info.', 'Region', 'Snippet', 'Source', 'Link'],
         feeds: [
             'https://oilprice.com/rss/main',

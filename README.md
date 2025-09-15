@@ -4,6 +4,11 @@
   <img src="assets/pixpagercar.png" alt="Feed Car" width="128" />
 </p>
 
+<p align="center" style="display: flex; align-items: center; justify-content: center; gap: 0.5em;">
+A project for
+  <img src="https://alshirawi.com/wp-content/uploads/2022/02/Al-Shirawi-Equipment-Co_White-Logo-01.png" alt="Feed Car" width="128" />
+</p>
+
 Automatic newsletter generator and RSS/Atom aggregator built on Google Apps Script. It fetches configured feeds, normalizes items into a Google Sheet, and renders a daily HTML newsletter (email + optional web preview).
 
 <p align="center">
