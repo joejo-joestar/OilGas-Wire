@@ -4,8 +4,9 @@
   <img src="assets/pixpagercar.png" alt="Feed Car" width="128" />
 </p>
 
-<p align="center" style="display: flex; align-items: center; justify-content: center; gap: 0.5em;">
-A project for
+<p align="center">
+  A project for
+  <br/>
   <img src="https://alshirawi.com/wp-content/uploads/2022/02/Al-Shirawi-Equipment-Co_White-Logo-01.png" alt="Feed Car" width="128" />
 </p>
 
