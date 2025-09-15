@@ -41,7 +41,7 @@ function renderNewsletterWebHtml(data) {
             var sep_fs = rawFeedSheetUrl.indexOf('?') === -1 ? '?' : '&';
             tpl.feedSheetUrl = rawFeedSheetUrl + sep_fs + 'nid=' + encodeURIComponent(nid_for_web) + '&rid=&src=' + encodeURIComponent(src_web) + '&eventDetail=' + encodeURIComponent(eventDetail_web) + (sig_web ? '&sig=' + encodeURIComponent(sig_web) : '');
         }
-    } catch (e) {}
+    } catch (e) { }
     tpl.nid = data.nid || '';
     // provide deployed webapp URL to the template so client JS can call the JSON API reliably
     try { tpl.webappUrl = data.webappUrl || PropertiesService.getScriptProperties().getProperty('WEBAPP_URL') || ''; } catch (e) { tpl.webappUrl = data.webappUrl || ''; }
@@ -523,6 +523,8 @@ function sendDailyNewsletter() {
         } catch (e) {
             Logger.log('Failed to send to ' + recipient + ': ' + (e && e.message));
         }
+        // Record recipient mapping so analytics can later resolve recipientHash -> email
+        try { var analyticsTarget = resolveAnalyticsTarget(nid); recordRecipientHash(analyticsTarget.spreadsheetId, rid, recipient); } catch (e) { /* ignore mapping errors */ }
     }
 
 }

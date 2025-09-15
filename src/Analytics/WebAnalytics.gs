@@ -106,7 +106,10 @@ function analyticsPing(params) {
     var src = (params.src || '').toString();
     var eventDetail = (params.eventDetail || params.detail || '').toString();
     var target = resolveAnalyticsTarget(nid);
-    var event = { timestamp: new Date(), eventType: 'page_view', eventDetail: eventDetail || 'page_view', nid: nid, recipientHash: rid, src: src || 'web', url: url, ua: (params.ua || '') || '', referer: (params.r || '') || '' };
+    // Treat eventDetails containing 'open' (e.g. 'open', 'email_open') as an 'open' event
+    var edt = (eventDetail || '').toString().toLowerCase();
+    var evtType = (edt.indexOf('open') !== -1) ? 'open' : 'page_view';
+    var event = { timestamp: new Date(), eventType: evtType, eventDetail: eventDetail || (evtType === 'page_view' ? 'page_view' : 'open'), nid: nid, recipientHash: rid, src: src || 'web', url: url, ua: (params.ua || '') || '', referer: (params.r || '') || '' };
     logAnalyticsEvent(target.spreadsheetId, event);
     return HtmlService.createHtmlOutput('');
 }
