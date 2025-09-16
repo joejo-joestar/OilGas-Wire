@@ -7,7 +7,7 @@
 <p align="center">
   A project for
   <br/>
-  <img src="https://alshirawi.com/wp-content/uploads/2022/02/Al-Shirawi-Equipment-Co_White-Logo-01.png" alt="Feed Car" width="128" />
+  <img src="https://alshirawi.com/wp-content/uploads/2022/02/Al-Shirawi-Equipment-Co_White-Logo-01.png" alt="ASECO" width="128" />
 </p>
 
 Automatic newsletter generator and RSS/Atom aggregator built on Google Apps Script. It fetches configured feeds, normalizes items into a Google Sheet, and renders a daily HTML newsletter (email + optional web preview).
