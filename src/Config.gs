@@ -41,6 +41,42 @@ var SHEET_ID = null;
  */
 var CONFIG = [
     {
+        category: 'Events and Conferences',
+        sheetName: 'Events and Conferences',
+        headers: ['Date', 'Headline', 'Region', 'Snippet', 'Source', 'Link'],
+        feeds: [
+            'https://www.investing.com/rss/news_11.rss',
+            'https://www.investing.com/rss/news_25.rss',
+        ],
+        googleNewsQueries: [
+            "oil and gas conference",
+            "oil and gas event",
+            "oil and gas summit",
+            "oil and gas forum",
+            "oil and gas exhibition",
+            "oil and gas expo",
+            "hydrogen conference",
+            "hydrogen event",
+            "hydrogen summit",
+            "hydrogen forum",
+            "hydrogen exhibition",
+            "hydrogen expo",
+            "water treatment conference",
+            "water treatment event",
+            "water treatment summit",
+            "water treatment forum",
+            "water treatment exhibition",
+            "water treatment expo"
+        ],
+        keywordInclusions: [
+            "conference", "conferences", "event", "events", "summit", "summits", "forum", "forums",
+            "exhibition", "exhibitions", "expo", "expos", "trade show", "trade shows", "webinar", "webinars",
+            "workshop", "workshops", "symposium", "symposia", "meeting", "meetings", "gathering", "gatherings", "seminar", "seminars",
+            "networking", "network", "networks", "adipec", "abu dhabi international petroleum exhibition and conference", "wtc", "offshore technology conference", "otc", "spe", "society of petroleum engineers", "world gas conference", "wgc"
+        ],
+    },
+
+    {
         category: 'Oil & Gas News',
         sheetName: 'Oil & Gas News',
         headers: ['Date', 'Headline', 'Company', 'Price Info.', 'Region', 'Snippet', 'Source', 'Link'],
