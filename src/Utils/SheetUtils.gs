@@ -97,10 +97,10 @@ function sortSheetByDate(sheet, headers) {
  * Assumes the link is the last header column and title is the 2nd column.
  * @param {GoogleAppsScript.Spreadsheet.Sheet} sheet
  * @param {Array<string>} headers
- * @return {{links: Object.<string,boolean>, titles: Object.<string,boolean>}}
+ * @return {{links: Object.<string,boolean>, titles: Array.<string>}}
  */
 function getExistingKeys(sheet, headers) {
-    var res = { links: {}, titles: {} };
+    var res = { links: {}, titles: [] };
     var lastRow = sheet.getLastRow();
     if (lastRow < 2) return res;
     var headerCount = headers.length;
@@ -113,7 +113,7 @@ function getExistingKeys(sheet, headers) {
     }
     for (var j = 0; j < titles.length; j++) {
         var t = titles[j][0];
-        if (t) res.titles[normalizeTitle(t)] = true;
+        if (t) res.titles.push(normalizeTitle(t));
     }
     return res;
 }
@@ -237,6 +237,8 @@ function buildRowForCategory(item, cat) {
             row.push(item.pubDate ? new Date(item.pubDate) : '');
         } else if (col.indexOf('headline') !== -1 || col.indexOf('title') !== -1) {
             row.push(item.title || '');
+        } else if (col.indexOf('relevance score') !== -1) { // *** NEW: Handle the score column ***
+            row.push(item.analysis.relevanceScore || 0);
         } else if (col.indexOf('snippet') !== -1 || col === 'snippet' || col.indexOf('summary') !== -1) {
             var raw = item.summary || item.content || '';
             var clean = (raw || '').toString().replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim();
@@ -267,7 +269,6 @@ function buildRowForCategory(item, cat) {
                         if (typeof numeric === 'number' && !isNaN(numeric)) {
                             val = formatMonetaryForSheet(numeric, cur);
                         } else {
-                            // fallback to priceInfo or raw string
                             val = item.analysis.priceInfo || item.analysis.dealValue || '';
                         }
                     } else {
