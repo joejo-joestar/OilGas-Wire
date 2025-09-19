@@ -48,7 +48,6 @@ function fetchAndStoreAll() {
         }
     });
 
-    // *** NEW: For cross-section deduplication ***
     var assignedItemLinks = new Set();
 
     CONFIG.forEach(function (cat) {
@@ -66,9 +65,6 @@ function fetchAndStoreAll() {
                 var normTitle = normalizeTitle(item.title || '');
                 var linkVal = item.link || '';
 
-                // *** NEW: Deduplication Checks ***
-                // 1. Skip if already assigned to a previous category in this run.
-                // 2. Skip if an exact link already exists in this sheet.
                 if (assignedItemLinks.has(linkVal) || existing.links[linkVal]) {
                     return;
                 }
@@ -82,7 +78,6 @@ function fetchAndStoreAll() {
                     var parsedDate = item.pubDate ? new Date(item.pubDate) : new Date(0);
                     newRowsObjs.push({ row: row, date: parsedDate, normTitle: normTitle, link: linkVal });
 
-                    // *** NEW: Mark this item as assigned ***
                     assignedItemLinks.add(linkVal);
                 }
             });
@@ -112,6 +107,10 @@ function fetchAndStoreAll() {
                 sheet.insertRows(2, rows.length);
                 sheet.getRange(2, 1, rows.length, rows[0].length).setValues(rows);
                 Logger.log('Inserted %s new rows into %s', rows.length, cat.sheetName);
+                try {
+                    // Use the centralized helper to sort the sheet by date (newest-first)
+                    sortSheetByDate(sheet, cat.headers);
+                } catch (se) { Logger.log('Failed to auto-sort sheet %s: %s', cat.sheetName, se && se.message); }
             } else {
                 Logger.log('No new items for %s', cat.sheetName);
             }

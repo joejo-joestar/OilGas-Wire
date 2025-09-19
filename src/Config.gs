@@ -56,7 +56,6 @@ var COMMON_FEEDS = [
     'https://www.accessnewswire.com/feed/rss2',
     'https://www.manufacturingdive.com/feeds/news/',
     'https://fuelcellsworks.com/feed',
-    'https://www.hartenergy.com/rss',
     'https://insideclimatenews.org/feed/',
     'https://www.energy-pedia.com/rss.aspx?newsfeedid=1',
     'https://www.agbi.com/feed',
@@ -86,18 +85,61 @@ var CONFIG = [
         industry: 'any',
         headers: ['Date', 'Headline', 'Relevance Score', 'Industry', 'Company / Individual', 'Region', 'Snippet', 'Source', 'Link'],
         feeds: COMMON_FEEDS,
-        googleNewsQueries: ["oil and gas executive appointment", "named ceo oil and gas", "appointed cfo oil and gas", "board appointment oil and gas", "ceo resigns oil and gas", "hydrogen executive appointment", "water treatment company ceo change"],
+        googleNewsQueries: [
+            "ceo appointed oil and gas",
+            "new executive hire oil and gas",
+            "named ceo oil and gas",
+            "appointed ceo oil and gas",
+            "appointed cfo oil and gas",
+            "appointed chairman oil and gas",
+            "board appointment oil and gas",
+            "executive appointment oil and gas",
+            "leadership change energy sector",
+            "leadership reshuffle energy sector",
+            "ceo resigns oil and gas",
+            "ceo steps down oil and gas",
+            "joins board oil and gas",
+            "promoted to ceo oil and gas",
+            "managing director appointed oil and gas",
+            "hydrogen industry leadership transition",
+            "appointed ceo hydrogen",
+            "hydrogen executive appointment",
+            "hydrogen startup leadership news",
+            "water treatment company ceo change",
+            "water sector board reshuffle",
+            "appointed ceo water treatment",
+            "water treatment executive appointment",
+            "water sector leadership transition"
+        ],
         primaryKeywords: ["appointed", "appoints", "named", "names", "joins", "joined", "promoted", "promotes", "resigns", "resigned", "steps down", "retires", "transition"],
         secondaryKeywords: ["ceo", "cfo", "chairman", "board", "executive", "leadership", "managing director", "president", "vp"]
     },
     {
         category: 'Mergers, Acquisitions, and Joint Ventures',
         sheetName: 'Mergers, Acquisitions, and Joint Ventures',
-        industry: 'Oil & Gas',
+        industry: 'any',
         headers: ['Date', 'Headline', 'Relevance Score', 'Companies', 'Region', 'Snippet', 'Source', 'Link'],
         feeds: COMMON_FEEDS,
-        googleNewsQueries: ["oil and gas merger", "oil and gas acquisition", "oil and gas acquires", "oil and gas joint venture", "oil and gas strategic partnership"],
-        primaryKeywords: ["merger", "acquisition", "acquires", "buyout", "joint venture", "jv", "strategic partnership", "collaboration", "alliance"],
+        googleNewsQueries: [
+            "oil and gas merger",
+            "oil and gas acquisition",
+            "oil and gas acquires",
+            "oil and gas joint venture",
+            "oil and gas jv",
+            "oil and gas buyout",
+            "oil and gas strategic partnership",
+            "hydrogen industry merger",
+            "hydrogen industry acquisition",
+            "hydrogen joint venture",
+            "hydrogen jv",
+            "hydrogen strategic partnership",
+            "water treatment merger",
+            "water treatment acquisition",
+            "water treatment joint venture",
+            "water treatment jv",
+            "water sector strategic partnership"
+        ],
+        primaryKeywords: ["merger", "acquisition", "acquires", "buyout", "joint venture", "jv", "strategic partnership", "collaboration", "alliance", "partnership"],
         secondaryKeywords: ["oil", "gas", "energy", "petroleum", "hydrogen", "water treatment", "pipeline", "refinery"]
     },
     {
@@ -106,30 +148,157 @@ var CONFIG = [
         industry: 'any',
         headers: ['Date', 'Headline', 'Relevance Score', 'Region', 'Snippet', 'Source', 'Link'],
         feeds: COMMON_FEEDS,
-        googleNewsQueries: ["oil and gas conference", "energy summit", "hydrogen expo", "water treatment forum"],
-        primaryKeywords: ["conference", "event", "summit", "forum", "exhibition", "expo", "trade show", "webinar", "workshop", "symposium"],
-        secondaryKeywords: ["oil", "gas", "hydrogen", "water", "petroleum", "adipec", "otc", "wgc"]
+        googleNewsQueries: [
+            "oil and gas conference",
+            "oil and gas event",
+            "oil and gas summit",
+            "oil and gas forum",
+            "oil and gas exhibition",
+            "oil and gas expo",
+            "hydrogen conference",
+            "hydrogen event",
+            "hydrogen summit",
+            "hydrogen forum",
+            "hydrogen exhibition",
+            "hydrogen expo",
+            "water treatment conference",
+            "water treatment event",
+            "water treatment summit",
+            "water treatment forum",
+            "water treatment exhibition",
+            "water treatment expo"
+        ],
+        primaryKeywords: ["conference", "event", "summit", "forum", "exhibition", "expo", "trade show", "webinar", "workshop", "symposium", "meeting", "convention", "networking", "seminar", "panel"],
+        secondaryKeywords: ["oil", "gas", "hydrogen", "water", "petroleum", "adipec", "abu dhabi international petroleum exhibition and conference", "wtc", "offshore technology conference", "otc", "spe", "society of petroleum engineers", "world gas conference", "wgc"]
     },
     {
         category: 'Commodity and Raw Material Prices',
         sheetName: 'Commodity and Raw Material Prices',
-        industry: 'Oil & Gas',
+        industry: 'any',
         headers: ['Date', 'Headline', 'Relevance Score', 'Commodity', 'Price Info.', 'Region', 'Snippet', 'Source', 'Link'],
         feeds: COMMON_FEEDS,
-        googleNewsQueries: ["crude oil price", "natural gas price", "lng price", "steel pipe price"],
+        googleNewsQueries: [
+            "crude oil price",
+            "brent oil price",
+            "wti oil price",
+            "natural gas price",
+            "lng price",
+            "steel pipe price",
+            "carbon steel price",
+            "seamless pipe price",
+            "drill pipe price",
+            "diesel fuel price",
+            "oil and gas chemical price"
+        ],
         primaryKeywords: ["price", "prices", "pricing", "cost", "market", "futures"],
         secondaryKeywords: ["oil", "gas", "lng", "steel", "crude", "brent", "wti", "diesel", "pipe", "chemical"]
     },
     {
         category: 'Oil & Gas News',
         sheetName: 'Oil & Gas News',
-        industry: 'Oil & Gas',
+        industry: 'any',
         headers: ['Date', 'Headline', 'Relevance Score', 'Company', 'Price Info.', 'Region', 'Snippet', 'Source', 'Link'],
         feeds: COMMON_FEEDS,
-        googleNewsQueries: ["oil and gas contract awarded", "oil and gas project announced", "oil and gas tender awarded", "oil and gas pipeline contract", "oil and gas refinery maintenance", "oil and gas drilling contract", "oil and gas epc contract", "oil and gas final investment decision", "fid"],
+        googleNewsQueries: [
+            // general project & contract award patterns
+            "oil and gas contract awarded",
+            "oil and gas contract win",
+            "oil and gas contract signed",
+            "oil and gas contract extension signed",
+            "oil and gas contract renewal signed",
+            "oil and gas agreement signed",
+            "oil and gas memorandum of understanding signed",
+
+            // project announcements, tenders, procurement and awards (exclude mergers/JVs)
+            "oil and gas project awarded",
+            "offshore project awarded",
+            "onshore project awarded",
+            "oil and gas project announced",
+            "oil and gas project launched",
+            "oil and gas project commissioned",
+            "oil and gas project startup",
+            "oil and gas tender awarded",
+            "oil and gas tender won",
+            "oil and gas procurement awarded",
+            "oil and gas order awarded",
+
+            // key contract types and scope-specific awards
+            "oil and gas pipeline contract awarded",
+            "oil and gas pipeline construction contract awarded",
+            "oil and gas pipeline maintenance contract awarded",
+            "oil and gas pipeline inspection contract awarded",
+            "oil and gas pipeline integrity contract awarded",
+            "oil and gas pipeline rehabilitation contract awarded",
+            "oil and gas pipeline repair contract awarded",
+            "oil and gas pipeline coating contract awarded",
+            "oil and gas pipeline welding contract awarded",
+
+            "oil and gas refinery contract awarded",
+            "oil and gas refinery maintenance contract awarded",
+            "oil and gas refinery turnaround contract awarded",
+            "oil and gas refinery upgrade contract awarded",
+
+            "oil and gas well service contract awarded",
+            "oil and gas well completion contract awarded",
+            "oil and gas well testing contract awarded",
+            "oil and gas pressure pumping contract awarded",
+            "oil and gas drilling contract awarded",
+
+            "oil and gas liquid mud plant project awarded",
+            "oil and gas process packages awarded",
+            "oil and gas custom manufacturing contract awarded",
+
+            "oil and gas storage tank contract awarded",
+            "oil and gas storage tank maintenance contract awarded",
+            "oil and gas storage tank inspection contract awarded",
+
+            "oil and gas chemical supply contract awarded",
+            "oil and gas chemical manufacturing contract awarded",
+            "oil and gas chemical distribution contract awarded",
+
+            // engineering, procurement, construction, FEED, FID
+            "oil and gas epc contract awarded",
+            "oil and gas engineering procurement construction contract awarded",
+            "oil and gas feed contract awarded",
+            "oil and gas final investment decision",
+            "oil and gas fid",
+
+            // financing, funding, sanction and approvals for projects
+            "oil and gas project finance secured",
+            "oil and gas project funding",
+            "oil and gas project sanctioned",
+            "oil and gas project approval",
+
+            // commissioning/operations keywords
+            "oil and gas commissioning",
+            "oil and gas commissioned",
+            "oil and gas started operations",
+            "oil and gas commercial operation date",
+
+            // generic award/search terms and fallbacks
+            "oil and gas awarded",
+            "oil and gas award",
+            "oil and gas contract value",
+            "oil and gas procurement",
+            "oil and gas contract announcement",
+        ],
         primaryKeywords: ["contract", "awarded", "procurement", "tender", "agreement", "mou", "epc", "feed", "fid", "sanctioned", "approval", "project", "commissioning", "startup", "operations"],
         secondaryKeywords: ["pipeline", "refinery", "well", "drilling", "offshore", "onshore", "lng", "gas", "oil", "petroleum", "field", "platform", "storage tank", "chemical"]
     }
+];
+
+/**
+ * Optional display order for sections in the mail/web UI. If provided,
+ * this array controls the sequence in which sections are rendered without
+ * changing the CONFIG array itself. Use exact category titles as defined
+ * in the CONFIG entries.
+ */
+var DISPLAY_ORDER = [
+    'Events and Conferences',
+    'Oil & Gas News',
+    'Commodity and Raw Material Prices',
+    'Leadership Changes',
+    'Mergers, Acquisitions, and Joint Ventures'
 ];
 
 var FETCH_OPTIONS = {
@@ -205,36 +374,99 @@ var FUZZY_DEDUPE_THRESHOLD = 0.90;
 var DEFAULT_CATEGORY_INDUSTRY = 'any';
 var FUZZY_THRESHOLD = 0.80;
 
-// Add this entire block to the end of your Config.gs file.
-
 /**
- * Keywords for relevance sorting, specific to Al Shirawi Equipment.
- * The system will check from score 5 down to 1. The first match determines the article's score.
+ * Pre-calculated Inverse Document Frequency (IDF) scores for keywords.
+ * Higher scores mean the keyword is rarer and more significant.
+ * Generated by the one-time `generateKeywordIdfScores` utility function.
  */
-var RELEVANCE_KEYWORDS = {
-    score5: [ // Direct Mentions & High-Priority Partners
-        'al shirawi equipment', 'al shirawi',
-        'adnoc', 'abu dhabi national oil company', 'saudi aramco', 'aramco', 'qatarEnergy',
-        'koc', 'kuwait oil company', 'enoc', 'emirates national oil company', 'dragon oil',
-        'petroleum development oman', 'pdo'
-    ],
-    score4: [ // Major IOCs & EPC Contractors
-        'totalenergies', 'total', 'bp', 'shell', 'exxonmobil', 'chevron', 'eni', 'occidental petroleum', 'oxy',
-        'petrofac', 'saipem', 'technipfmc', 'mcdermott', 'l&t', 'larsen & toubro', 'worley', 'kbr'
-    ],
-    score3: [ // Competitors & Service Companies
-        'schlumberger', 'slb', 'halliburton', 'baker hughes', 'weatherford', 'nov', 'national oilwell varco',
-        'ades holding', 'subsea7'
-    ],
-    score2: [ // Geographic Focus
-        'uae', 'united arab emirates', 'abu dhabi', 'dubai', 'sharjah', 'saudi arabia', 'ksa', 'qatar',
-        'oman', 'kuwait', 'bahrain', 'middle east', 'gcc', 'gulf cooperation council', 'mena'
-    ],
-    score1: [ // Relevant Products, Services & Industry Terms
-        'drilling rig', 'jack-up rig', 'wellhead', 'pipeline', 'piping', 'octg', 'oil country tubular goods',
-        'storage tanks', 'vessels', 'compressor', 'pump', 'valve', 'fpso', 'lng terminal', 'gas plant',
-        'upstream', 'midstream', 'downstream', 'onshore', 'offshore', 'exploration', 'drilling',
-        'production', 'refinery', 'petrochemical', 'well services', 'well completion', 'epc contract',
-        'feed', 'front-end engineering design'
-    ]
-};
+var KEYWORD_IDF_SCORES = {
+    "al shirawi equipment": 6.137727054086234,
+    "al shirawi": 6.137727054086234,
+    "adnoc": 3.429676852984024,
+    "abu dhabi national oil company": 6.137727054086234,
+    "saudi aramco": 4.751432692966343,
+    "aramco": 4.34596758485818,
+    "qatarEnergy": 5.039114765418124,
+    "koc": 6.137727054086234,
+    "kuwait oil company": 5.444579873526289,
+    "enoc": 5.444579873526289,
+    "emirates national oil company": 6.137727054086234,
+    "dragon oil": 6.137727054086234,
+    "petroleum development oman": 6.137727054086234,
+    "pdo": 6.137727054086234,
+    "totalenergies": 3.193288074919794,
+    "total": 3.0466846007279185,
+    "bp": 3.4986697244709752,
+    "shell": 3.193288074919794,
+    "exxonmobil": 5.444579873526289,
+    "chevron": 4.058285512406398,
+    "eni": 3.093204616362811,
+    "occidental petroleum": 6.137727054086234,
+    "oxy": 6.137727054086234,
+    "petrofac": 4.751432692966343,
+    "saipem": 4.751432692966343,
+    "technipfmc": 6.137727054086234,
+    "mcdermott": 4.528289141652134,
+    "l&t": 6.137727054086234,
+    "larsen & toubro": 6.137727054086234,
+    "worley": 5.039114765418124,
+    "kbr": 5.039114765418124,
+    "schlumberger": 6.137727054086234,
+    "slb": 4.528289141652134,
+    "halliburton": 4.058285512406398,
+    "baker hughes": 4.058285512406398,
+    "weatherford": 5.039114765418124,
+    "nov": 4.751432692966343,
+    "national oilwell varco": 6.137727054086234,
+    "ades holding": 5.444579873526289,
+    "subsea7": 4.751432692966343,
+    "uae": 4.528289141652134,
+    "united arab emirates": 6.137727054086234,
+    "abu dhabi": 6.137727054086234,
+    "dubai": 5.039114765418124,
+    "sharjah": 6.137727054086234,
+    "saudi arabia": 5.444579873526289,
+    "ksa": 6.137727054086234,
+    "qatar": 4.751432692966343,
+    "oman": 4.528289141652134,
+    "kuwait": 5.039114765418124,
+    "bahrain": 6.137727054086234,
+    "middle east": 3.5727776966246974,
+    "gcc": 6.137727054086234,
+    "gulf cooperation council": 6.137727054086234,
+    "mena": 6.137727054086234,
+    "drilling rig": 4.528289141652134,
+    "jack-up rig": 5.444579873526289,
+    "wellhead": 6.137727054086234,
+    "pipeline": 2.309085657597139,
+    "piping": 6.137727054086234,
+    "octg": 5.444579873526289,
+    "oil country tubular goods": 5.444579873526289,
+    "storage tanks": 6.137727054086234,
+    "vessels": 5.039114765418124,
+    "compressor": 5.444579873526289,
+    "pump": 5.444579873526289,
+    "valve": 6.137727054086234,
+    "fpso": 4.528289141652134,
+    "lng terminal": 4.191816905030921,
+    "gas plant": 5.444579873526289,
+    "upstream": 3.2473552961900696,
+    "midstream": 5.039114765418124,
+    "downstream": 6.137727054086234,
+    "onshore": 4.528289141652134,
+    "offshore": 1.5630160755828513,
+    "exploration": 3.7398317812878634,
+    "drilling": 2.2875794523761757,
+    "production": 3.304513710030018,
+    "refinery": 4.751432692966343,
+    "petrochemical": 6.137727054086234,
+    "well services": 6.137727054086234,
+    "well completion": 5.444579873526289,
+    "epc contract": 3.0022328381570844,
+    "feed": 4.34596758485818,
+    "front-end engineering design": 6.137727054086234,
+    "contract": 1.0019286170359725,
+    "project": 0.9902325772727809,
+    "oil": 1.285696790166617,
+    "gas": 0.8907029819257478
+}

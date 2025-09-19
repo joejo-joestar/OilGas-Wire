@@ -11,8 +11,29 @@
  */
 function renderNewsletterHtml(data) {
     var tpl = HtmlService.createTemplateFromFile('Newsletter_Mail');
+    // Normalise and ensure expected fields for templates
+    var sections = JSON.parse(JSON.stringify(data.sections || []));
+    // Reorder sections to a custom display order (doesn't modify CONFIG)
+    try { sections = reorderSections(sections); } catch (e) { /* ignore */ }
+    try {
+        sections.forEach(function (sec) {
+            if (sec && sec.items && sec.items.length) {
+                sec.items.forEach(function (it) {
+                    // Ensure pubDateStr exists for template
+                    if (!it.pubDateStr && it.pubDate) {
+                        try { it.pubDateStr = Utilities.formatDate(new Date(it.pubDate), Session.getScriptTimeZone() || 'UTC', 'MMM d, yyyy'); } catch (e) { it.pubDateStr = (it.pubDate || '').toString(); }
+                    }
+                    // Normalize relevanceScore to numeric so sorting works
+                    it.relevanceScore = Number.isFinite(Number(it.relevanceScore)) ? Number(it.relevanceScore) : (Number.isFinite(Number(it.relevancescore)) ? Number(it.relevancescore) : 0);
+                });
+                // Group by date then sort each date-group by relevance for display
+                sec.items = groupAndSortItemsByDateThenRelevance(sec.items);
+            }
+        });
+    } catch (e) { /* ignore */ }
+
     tpl.items = data.items || [];
-    tpl.sections = data.sections || [];
+    tpl.sections = sections;
     tpl.dateRangeText = data.dateRangeText || '';
     tpl.fullNewsletterUrl = data.fullNewsletterUrl || '';
     tpl.feedSheetUrl = data.feedSheetUrl || ('https://docs.google.com/spreadsheets/d/' + getSheetId() + '/');
@@ -25,7 +46,26 @@ function renderNewsletterHtml(data) {
  */
 function renderNewsletterWebHtml(data) {
     var tpl = HtmlService.createTemplateFromFile('Newsletter_Web');
-    tpl.sections = data.sections || [];
+    // Clone and normalize sections so client-side has consistent fields
+    var sections = JSON.parse(JSON.stringify(data.sections || []));
+    // Reorder according to custom display order
+    try { sections = reorderSections(sections); } catch (e) { /* ignore */ }
+    try {
+        sections.forEach(function (sec) {
+            if (sec && sec.items && sec.items.length) {
+                sec.items.forEach(function (it) {
+                    if (!it.pubDateStr && it.pubDate) {
+                        try { it.pubDateStr = Utilities.formatDate(new Date(it.pubDate), Session.getScriptTimeZone() || 'UTC', 'MMM d, yyyy'); } catch (e) { it.pubDateStr = (it.pubDate || '').toString(); }
+                    }
+                    it.relevanceScore = Number.isFinite(Number(it.relevanceScore)) ? Number(it.relevanceScore) : (Number.isFinite(Number(it.relevancescore)) ? Number(it.relevancescore) : 0);
+                });
+                // Group by date then sort each date-group by relevance for display
+                sec.items = groupAndSortItemsByDateThenRelevance(sec.items);
+            }
+        });
+    } catch (e) { /* ignore */ }
+
+    tpl.sections = sections;
     tpl.dateRangeText = data.dateRangeText || '';
     // Build a signed feedSheetUrl for web footer clicks so clicks can be verified and logged server-side.
     var rawFeedSheetUrl = data.feedSheetUrl || ('https://docs.google.com/spreadsheets/d/' + getSheetId() + '/');
@@ -60,6 +100,58 @@ function include(filename) {
 }
 
 /**
+ * Reorder sections to a fixed display order defined here. Does not modify CONFIG.
+ * Only sections present in the input array are returned, in the custom order.
+ * @param {Array<Object>} sections
+ * @return {Array<Object>} reordered sections
+ */
+function reorderSections(sections) {
+    if (!sections || !sections.length) return sections || [];
+    var desired = (typeof DISPLAY_ORDER !== 'undefined' && Array.isArray(DISPLAY_ORDER) && DISPLAY_ORDER.length) ? DISPLAY_ORDER : [
+        'Events and Conferences',
+        'Oil & Gas News',
+        'Commodity and Raw Material Prices',
+        'Leadership Changes',
+        'Mergers, Acquisitions, and Joint Ventures'
+    ];
+
+    var map = {};
+    sections.forEach(function (s) { if (s && s.title) map[s.title] = s; });
+    var out = [];
+    desired.forEach(function (title) { if (map[title]) out.push(map[title]); });
+    // Append any sections not in the desired list at the end in original order
+    sections.forEach(function (s) { if (s && s.title && desired.indexOf(s.title) === -1) out.push(s); });
+    return out;
+}
+
+/**
+ * For a list of items, group them by publication date (day) and within each
+ * day sort by relevanceScore descending. Returns a flattened array where
+ * the newest dates appear first and each date's items are relevance-sorted.
+ * @param {Array<Object>} items
+ * @return {Array<Object>}
+ */
+function groupAndSortItemsByDateThenRelevance(items) {
+    if (!items || !items.length) return items || [];
+    var tz = Session.getScriptTimeZone() || 'UTC';
+    var groups = {};
+    items.forEach(function (it) {
+        var d = it && it.pubDate ? new Date(it.pubDate) : null;
+        var key = d ? Utilities.formatDate(d, tz, 'yyyy-MM-dd') : '1970-01-01';
+        if (!groups[key]) groups[key] = [];
+        groups[key].push(it);
+    });
+    var keys = Object.keys(groups).sort().reverse(); // newest first
+    var out = [];
+    keys.forEach(function (k) {
+        var arr = groups[k];
+        arr.sort(function (a, b) { return (b.relevanceScore || 0) - (a.relevanceScore || 0); });
+        out = out.concat(arr);
+    });
+    return out;
+}
+
+/**
  * Build visible sections for a specific date (dateStr in 'yyyy-MM-dd') or for previous day when omitted.
  * Returns an array of sections suitable for `renderNewsletterHtml`.
  */
@@ -77,7 +169,18 @@ function buildVisibleSectionsForDate(dateStr) {
     var dayStart = new Date(target.getFullYear(), target.getMonth(), target.getDate());
     var dayEnd = new Date(dayStart.getTime() + 24 * 60 * 60 * 1000);
 
-    return getItemsInDateRange(dayStart, dayEnd);
+    var sections = getItemsInDateRange(dayStart, dayEnd);
+    // Apply custom ordering to sections so mail and web views display in desired sequence
+    try { sections = reorderSections(sections); } catch (e) { /* ignore */ }
+    // Ensure items in each section are sorted by relevanceScore (descending)
+    try {
+        sections.forEach(function (sec) {
+            if (sec && sec.items && sec.items.length) {
+                sec.items = groupAndSortItemsByDateThenRelevance(sec.items);
+            }
+        });
+    } catch (e) { /* ignore sorting errors */ }
+    return sections;
 }
 
 
@@ -124,8 +227,19 @@ function getItemsInDateRange(startDate, endDate) {
                         item[propName] = row[colIndex];
                     }
                 });
-                // Ensure relevance score is a number for sorting
-                item.relevanceScore = (relevanceColIdx !== -1) ? Number(row[relevanceColIdx]) || 0 : 0;
+
+                // Ensure we expose a Date and a formatted string for templates
+                item.pubDate = pubDate;
+                try {
+                    item.pubDateStr = pubDate ? Utilities.formatDate(pubDate, Session.getScriptTimeZone() || 'UTC', 'MMM d, yyyy') : '';
+                } catch (e) { item.pubDateStr = (pubDate ? pubDate.toString() : ''); }
+
+                // Normalize relevance score into a numeric property named `relevanceScore`
+                // Sheets usually have header like 'relevance score' -> normalized to 'relevancescore'
+                var rawRel = (item.relevanceScore || item.relevancescore || item.relevance || '');
+                var numRel = parseFloat(rawRel);
+                item.relevanceScore = Number.isFinite(numRel) ? numRel : 0;
+
                 itemsForDate.push(item);
             }
         });
@@ -289,6 +403,7 @@ function sendDailyNewsletter() {
 
     var maxPerSection = parseInt(props.getProperty('MAX_ITEMS_PER_SECTION') || '6', 10);
     var truncatedSections = visibleSections.map(function (sec) {
+        try { if (sec && sec.items && sec.items.length) sec.items.sort(function (a, b) { return (b.relevanceScore || 0) - (a.relevanceScore || 0); }); } catch (e) { }
         return {
             title: sec.title,
             items: sec.items.slice(0, maxPerSection),
