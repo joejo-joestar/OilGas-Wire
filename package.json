@@ -1,5 +1,5 @@
 {
-    "name": "oil-and-gas-newsletter",
+    "name": "oil-gas-wire",
     "version": "0.1.0",
     "description": "Google Apps Script project for aggregating oil & gas news feeds",
     "scripts": {
