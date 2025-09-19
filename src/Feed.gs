@@ -13,107 +13,109 @@
  */
 function fetchAndStoreAll() {
     var sheetId = getSheetId();
+    var ss = SpreadsheetApp.openById(sheetId);
 
+    var allFeedUrls = new Set();
+    var newsQueryMap = {};
     CONFIG.forEach(function (cat) {
-        try {
-            fetchCategory(cat, sheetId);
-        } catch (e) {
-            Logger.log('Error fetching category %s: %s', cat.category, e.message);
+        (cat.feeds || []).forEach(function (feedUrl) { allFeedUrls.add(feedUrl); });
+        if (cat.googleNewsQueries && cat.googleNewsQueries.length) {
+            cat.googleNewsQueries.forEach(function (q) {
+                var encoded = encodeURIComponent(q);
+                var gUrl = 'https://news.google.com/rss/search?q=' + encoded;
+                allFeedUrls.add(gUrl);
+                newsQueryMap[gUrl] = q;
+            });
         }
     });
-}
 
-/**
- * Fetch and store items for a single category.
- * @param {CategoryConfig} cat Category config object (feeds, headers, queries, sheetName).
- * @param {string=} sheetId Optional spreadsheet id to use instead of Project property.
- * @return {void}
- */
-function fetchCategory(cat, sheetId) {
-    var idToUse = sheetId || SHEET_ID || getSheetId();
-    var ss = SpreadsheetApp.openById(idToUse);
-    var sheet = ss.getSheetByName(cat.sheetName) || ss.insertSheet(cat.sheetName);
-
-    ensureHeaders(sheet, cat.headers);
-
-    var existing = getExistingKeys(sheet, cat.headers);
-
-    var newRowsObjs = [];
-
-    // Build effective feed list: include configured feeds plus Google News per-query feeds if present
-    var feedUrls = (cat.feeds || []).slice();
-    // If googleNewsQueries are provided, map each query to its generated feed URL
-    var newsQueryMap = {};
-    if (cat.googleNewsQueries && cat.googleNewsQueries.length) {
-        cat.googleNewsQueries.forEach(function (q) {
-            var encoded = encodeURIComponent(q);
-            var gUrl = 'https://news.google.com/rss/search?q=' + encoded;
-            feedUrls.push(gUrl);
-            newsQueryMap[gUrl] = q;
-        });
-    }
-
-    feedUrls.forEach(function (feedUrl) {
+    var allItems = [];
+    allFeedUrls.forEach(function (feedUrl) {
         try {
             var resp = UrlFetchApp.fetch(feedUrl, FETCH_OPTIONS);
+            if (resp.getResponseCode() !== 200) {
+                Logger.log('Failed to fetch %s: HTTP %s', feedUrl, resp.getResponseCode());
+                return;
+            }
             var xml = resp.getContentText();
-            if (resp.getResponseCode() === 401 || resp.getResponseCode() === 403) {
-                Logger.log('Failed to fetch %s: HTTP %s (site likely blocks automated requests)', feedUrl, resp.getResponseCode());
+            var parsedItems = parseFeed(xml, feedUrl);
+            if ((newsQueryMap[feedUrl]) && (!parsedItems || parsedItems.length === 0)) {
+                Logger.log('Google News query returned empty results for query: "%s" (feedUrl=%s)', newsQueryMap[feedUrl], feedUrl);
             }
-            var items = parseFeed(xml, feedUrl);
-            items.forEach(function (item) {
-                // enforce cutoff year: skip items without a parsable date or older than MIN_YEAR
-                var itemYear = getItemYear(item);
-                if (!itemYear || itemYear < MIN_YEAR) return;
-
-                var normTitle = normalizeTitle(item.title || '');
-                var linkVal = item.link || '';
-                if (matchesQueries(item, cat.queries, cat.keywordInclusions, cat.keywordExclusions, feedUrl) && !existing.links[linkVal] && !existing.titles[normTitle]) {
-                    // enrich item with analyzed fields for better column population
-                    item.analysis = analyzeItem(item);
-                    var row = buildRowForCategory(item, cat);
-                    var parsedDate = null;
-                    try { parsedDate = item.pubDate ? new Date(item.pubDate) : null; } catch (e) { parsedDate = null; }
-                    newRowsObjs.push({ row: row, date: parsedDate || new Date(0) });
-                    // mark dedupe keys
-                    if (linkVal) existing.links[linkVal] = true;
-                    if (normTitle) existing.titles[normTitle] = true;
-                }
-            });
-            // If this was a Google News query and parsed zero items, log the query for diagnostics
-            if ((newsQueryMap[feedUrl]) && (!items || items.length === 0)) {
-                Logger.log('Google News query returned empty results for category %s : "%s" (feedUrl=%s)', cat.category, newsQueryMap[feedUrl], feedUrl);
-            }
+            allItems = allItems.concat(parsedItems);
         } catch (e) {
             Logger.log('Failed to fetch or parse %s: %s', feedUrl, e.message);
         }
     });
 
-    if (newRowsObjs.length > 0) {
-        // Sort by date descending (newest first) then insert at the top (row 2) so newest appears first
-        newRowsObjs.sort(function (a, b) { return b.date - a.date; });
-        var rows = newRowsObjs.map(function (o) { return o.row; });
+    var assignedItemLinks = new Set();
+
+    CONFIG.forEach(function (cat) {
         try {
-            // Ensure there's space and insert rows below the header
-            sheet.insertRows(2, rows.length);
+            var sheet = ss.getSheetByName(cat.sheetName) || ss.insertSheet(cat.sheetName);
+            ensureHeaders(sheet, cat.headers);
+            var existing = getExistingKeys(sheet, cat.headers);
+            var newRowsObjs = [];
+            var existingTitles = (existing.titles || []).slice();
+
+            allItems.forEach(function (item) {
+                var itemYear = getItemYear(item);
+                if (!itemYear || itemYear < MIN_YEAR) return;
+
+                var normTitle = normalizeTitle(item.title || '');
+                var linkVal = item.link || '';
+
+                if (assignedItemLinks.has(linkVal) || existing.links[linkVal]) {
+                    return;
+                }
+
+                if (doesItemMatchCategory(item, cat)) {
+                    var alreadyExact = existingTitles.includes(normTitle);
+                    if (alreadyExact) return;
+
+                    item.analysis = analyzeItem(item);
+                    var row = buildRowForCategory(item, cat);
+                    var parsedDate = item.pubDate ? new Date(item.pubDate) : new Date(0);
+                    newRowsObjs.push({ row: row, date: parsedDate, normTitle: normTitle, link: linkVal });
+
+                    assignedItemLinks.add(linkVal);
+                }
+            });
+
+            var accepted = [];
+            var acceptedNorms = [];
+            for (var ni = 0; ni < newRowsObjs.length; ni++) {
+                var cand = newRowsObjs[ni];
+                var cNorm = cand.normTitle;
+                if (!cNorm) continue;
+                var isDuplicate = false;
+                for (var ei = 0; ei < existingTitles.length; ei++) {
+                    if (similarity(cNorm, existingTitles[ei]) >= FUZZY_DEDUPE_THRESHOLD) { isDuplicate = true; break; }
+                }
+                if (isDuplicate) continue;
+                for (var ai = 0; ai < acceptedNorms.length; ai++) {
+                    if (similarity(cNorm, acceptedNorms[ai]) >= FUZZY_DEDUPE_THRESHOLD) { isDuplicate = true; break; }
+                }
+                if (isDuplicate) continue;
+                accepted.push(cand);
+                acceptedNorms.push(cNorm);
+            }
+
+            if (accepted.length > 0) {
+                accepted.sort(function (a, b) { return b.date - a.date; });
+                var rows = accepted.map(function (o) { return o.row; });
+                sheet.insertRows(2, rows.length);
+                sheet.getRange(2, 1, rows.length, rows[0].length).setValues(rows);
+                Logger.log('Inserted %s new rows into %s', rows.length, cat.sheetName);
+                try {
+                    // Use the centralized helper to sort the sheet by date (newest-first)
+                    sortSheetByDate(sheet, cat.headers);
+                } catch (se) { Logger.log('Failed to auto-sort sheet %s: %s', cat.sheetName, se && se.message); }
+            } else {
+                Logger.log('No new items for %s', cat.sheetName);
+            }
         } catch (e) {
-            // insertRows may fail on some sheet protections; fall back to appending then sorting
-            sheet.getRange(sheet.getLastRow() + 1, 1, rows.length, rows[0].length).setValues(rows);
-            Logger.log('Fallback appended %s rows to %s (insert at top failed): %s', rows.length, cat.sheetName, e.message);
-            // attempt to sort afterwards
-            try { sortSheetByDate(sheet, cat.headers); } catch (e2) { Logger.log('Sort fallback failed: %s', e2.message); }
-            return;
+            Logger.log('Error processing category %s: %s', cat.category, e.message);
         }
-        // Write the rows into the newly inserted area
-        sheet.getRange(2, 1, rows.length, rows[0].length).setValues(rows);
-        Logger.log('Inserted %s new rows at top of %s', rows.length, cat.sheetName);
-    } else {
-        Logger.log('No new rows for %s', cat.sheetName);
-    }
-    // Ensure sheet is sorted newest-first by the Date column after updating
-    try {
-        sortSheetByDate(sheet, cat.headers);
-    } catch (e) {
-        Logger.log('Unable to sort sheet %s by date: %s', cat.sheetName, e.message);
-    }
+    });
 }
