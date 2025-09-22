@@ -97,6 +97,9 @@ This project includes lightweight analytics for clicks, page views and active ti
 
 ### Local / [`clasp`](https://github.com/google/clasp)
 
+> [!NOTE]
+> [Node.js](https://nodejs.org/en/download) is required to run any of the follwoing commands.
+
 1. clone this repo:
 
     ```bash
