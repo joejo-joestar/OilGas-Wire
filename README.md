@@ -71,15 +71,17 @@ This project includes lightweight analytics for clicks, page views and active ti
   - Uses `google.script.run` when served by HtmlService, or
   - Uses `navigator.sendBeacon` to POST JSON to `WEBAPP_URL`, falling back to `fetch()` if needed.
 
->[!WARNING]
+> [!WARNING]
 > The mail analytics and sheet analytics are not fully implemented due to limitations with email clients and GAS. The mail analytics code is present in `MailAnalytics.gs` but do not work reliably.
 
 <br/>
 
->[!NOTE]
+> [!NOTE]
 > Set `ANALYTICS_SPREADSHEET_ID` to enable event writes. The code uses `computeHmacHex` / `verifyHmacHex` helpers if you later add signed redirects.
 
->[!TIP] Future Scope
+<br/>
+
+> [!TIP] Future Scope
 > You can implement a separate backend for more robust analytics, e.g. using Google Cloud Functions + Firestore or BigQuery.
 
 ---
