@@ -81,7 +81,7 @@ This project includes lightweight analytics for clicks, page views and active ti
 
 <br/>
 
-> [!TIP] Future Scope
+> [!TIP]
 > You can implement a separate backend for more robust analytics, e.g. using Google Cloud Functions + Firestore or BigQuery.
 
 ---
