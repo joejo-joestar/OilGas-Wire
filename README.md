@@ -31,14 +31,15 @@ Automatic newsletter generator and RSS/Atom aggregator built on Google Apps Scri
 
 Key properties (set in Project Settings → Script properties):
 
-| Property                   | Description                                                                          | Required / Notes                           |
-| -------------------------- | ------------------------------------------------------------------------------------ | ------------------------------------------ |
-| `SHEET_ID`                 | ID of the Google Sheet that stores feed tabs and feed data                           | Required                                   |
-| `ANALYTICS_SPREADSHEET_ID` | Spreadsheet ID where analytics events are logged (Analytics_Events, Analytics_Daily) | Recommended (for tracking)                 |
-| `SEND_TO`                  | Comma-separated list of recipient emails for the newsletter                          | Required unless `TEST_RECIPIENT` is set    |
-| `TEST_RECIPIENT`           | Sends newsletter only to this address (overrides `SEND_TO`), useful for testing      | Optional (use for safe testing)            |
-| `WEBAPP_URL`               | Deployed Web App URL used for the web preview and analytics POST fallback            | Optional (set to enable web preview links) |
-| `MAX_ITEMS_PER_SECTION`    | How many items to show in each section in the email preview (default: 6)             | Optional (default: 6)                      |
+| Property                   | Description                                                                                                                   | Required / Notes                           |
+| -------------------------- | ----------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------ |
+| `SHEET_ID`                 | ID of the Google Sheet that stores feed tabs and feed data                                                                    | Required                                   |
+| `ANALYTICS_SPREADSHEET_ID` | Spreadsheet ID where analytics events are logged (Analytics_Events, Analytics_Daily)                                          | Recommended (for tracking)                 |
+| `ANALYTICS_SECRET`         | Some secret string ([base64](https://www.base64encode.org/)) to perform very basic [HMAC](https://en.wikipedia.org/wiki/HMAC) | Recommended (for tracking)                 |
+| `SEND_TO`                  | Comma-separated list of recipient emails for the newsletter                                                                   | Required unless `TEST_RECIPIENT` is set    |
+| `TEST_RECIPIENT`           | Sends newsletter only to this address (overrides `SEND_TO`), useful for testing                                               | Optional (use for safe testing)            |
+| `WEBAPP_URL`               | Deployed Web App URL used for the web preview and analytics POST fallback                                                     | Optional (set to enable web preview links) |
+| `MAX_ITEMS_PER_SECTION`    | How many items to show in each section in the email preview (default: 6)                                                      | Optional (default: 6)                      |
 
 If `WEBAPP_URL` is set, outgoing emails include a "View full newsletter" link that points to the web preview.
 
@@ -69,12 +70,17 @@ This project includes lightweight analytics for clicks, page views and active ti
 - `Newsletter_Web.html` now includes a `trackClick(payload)` helper that:
   - Uses `google.script.run` when served by HtmlService, or
   - Uses `navigator.sendBeacon` to POST JSON to `WEBAPP_URL`, falling back to `fetch()` if needed.
-- The web template also listens for `click` and `auxclick` (middle-click) events and calls `trackClick` so headline clicks opened in new tabs are also tracked (best-effort; browser/network restrictions may still affect reliability).
+
+>[!WARNING]
+> The mail analytics and sheet analytics are not fully implemented due to limitations with email clients and GAS. The mail analytics code is present in `MailAnalytics.gs` but do not work reliably.
+
+<br/>
 
 >[!NOTE]
 > Set `ANALYTICS_SPREADSHEET_ID` to enable event writes. The code uses `computeHmacHex` / `verifyHmacHex` helpers if you later add signed redirects.
->
-> If you want more reliable tracking for middle-clicks, consider adding `ping` attributes to anchors or programmatic `window.open` fallback (trade-offs exist).
+
+>[!TIP] Future Scope
+> You can implement a separate backend for more robust analytics, e.g. using Google Cloud Functions + Firestore or BigQuery.
 
 ---
 
@@ -89,20 +95,43 @@ This project includes lightweight analytics for clicks, page views and active ti
 
 ## ▶️ How to run / test
 
-Local / `clasp` (Windows cmd.exe):
+### Local / [`clasp`](https://github.com/google/clasp)
 
-```bat
-npm install
-clasp login
-clasp pull
-clasp push
-```
+1. clone this repo:
+
+    ```bash
+    git clone https://github.com/joejo-joestar/OilGas-Wire.git
+    ```
+
+2. cd into the directory
+
+3. run these commands:
+
+    ```bash
+    npm i
+    ```
+
+    ```bash
+    clasp login
+    ```
+
+    ```bash
+    clasp pull
+    ```
+
+    ```bash
+    clasp push
+    ```
+
+4. Open the project in the Apps Script editor.
 
 ### In Apps Script editor
 
-1. Set Script properties (`SHEET_ID`, `ANALYTICS_SPREADSHEET_ID`, `WEBAPP_URL`, etc.).
-2. Run `sendDailyNewsletter` to test sending (use `TEST_RECIPIENT` during tests).
-3. Deploy the web app and visit `WEBAPP_URL?preview=1` to preview the full HTML.
+1. Set [Script properties](#️-configuration-script-properties) (`SHEET_ID`, `ANALYTICS_SPREADSHEET_ID`, `WEBAPP_URL`, etc.).
+2. Populate the feed config sheet (tab named `Feed_Config`) with feed URLs and target sheet tabs.
+3. In `Utils/Debug.gs`, run the `testRun()` function to fetch feeds and populate the sheet.
+4. [Deploy the web app](#-deployment-web-app) and visit `WEBAPP_URL?preview=1` to preview the full HTML.
+5. Run `sendDailyNewsletter` to test sending (use `TEST_RECIPIENT` during tests).
 
 ### Testing analytics
 
@@ -127,6 +156,7 @@ OilGas-Wire/
     ├── AutoMailer.gs
     ├── Config.gs
     ├── Feed.gs
+    ├── IDFScoreGen.gs
     ├── Newsletter_Mail.html
     ├── Newsletter_Web.html
     ├── Styles_Common.html
@@ -166,6 +196,6 @@ OilGas-Wire/
 <img src="assets/newsletter_preview.png" alt="Newsletter Preview" title="Newsletter Preview" width="600" >
 </p>
 
-- Smart link handling (extracts URLs from HYPERLINK formulas) and optional signed redirect flow for tracking clicks.
+- Uses TF-IDF scoring to identify and sort by relevant articles (see `IDFScoreGen.gs`).
 
 ---
