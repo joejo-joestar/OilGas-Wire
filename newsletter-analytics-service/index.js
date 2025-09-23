@@ -6,7 +6,7 @@ const app = express();
 app.use(express.json());
 
 // IMPORTANT: Enable CORS for the Google Apps Script origin.
-// This is required for your web app to be able to send requests.
+// This is required for the web app to be able to send requests.
 app.use(cors({ origin: 'https://script.google.com' }));
 
 const bigquery = new BigQuery();

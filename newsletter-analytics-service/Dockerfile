@@ -13,8 +13,8 @@ RUN npm install --only=production
 # Bundle app source
 COPY . .
 
-# Your app binds to port 8080 so you'll use the ENV PORT variable
+# App binds to port 8080 so you'll use the ENV PORT variable
 EXPOSE 8080
 
-# Define the command to run your app
+# Define the command to run app
 CMD ["npm", "start"]

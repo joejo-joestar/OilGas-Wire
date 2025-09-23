@@ -13,8 +13,6 @@ function handleAnalyticsGet(e) {
     return HtmlService.createHtmlOutput('');
 }
 
-// Pixel handler removed; pixel tracking is disabled.
-
 function analyticsRedirect(params) {
     var nid = (params.nid || '').toString();
     var rid = (params.rid || '').toString();
