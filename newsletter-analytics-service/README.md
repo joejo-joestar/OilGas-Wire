@@ -33,12 +33,12 @@ This service collects and stores analytics events for newsletters, such as email
     gcloud run deploy newsletter-analytics-service --source . --platform managed --region us-central1 --allow-unauthenticated
     ```
 
-    > [!NOTE]
-    > The `--allow-unauthenticated` flag allows public access to the service.
-    >
-    > If you want to restrict access, remove this flag and configure IAM permissions accordingly.
-    >
-    > Make sure that you have the necessary permissions to change IAM policies in your Google Cloud project.
+> [!NOTE]
+> The `--allow-unauthenticated` flag allows public access to the service.
+>
+> If you want to restrict access, remove this flag and configure IAM permissions accordingly.
+>
+> Make sure that you have the necessary permissions to change IAM policies in your Google Cloud project.
 
 4. **Test Endpoint**:
     Use the provided `curl` command in the cloud console to test the endpoint. Make sure to replace the URL with your deployed service URL.
