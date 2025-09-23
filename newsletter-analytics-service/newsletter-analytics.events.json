@@ -1,0 +1,47 @@
+[
+    {
+        "name": "eventTimestamp",
+        "type": "TIMESTAMP",
+        "description": "metric recorded time"
+    },
+    {
+        "name": "src",
+        "type": "STRING",
+        "description": "source of metric recorded"
+    },
+    {
+        "name": "eventType",
+        "type": "STRING",
+        "description": "type of event"
+    },
+    {
+        "name": "eventDetail",
+        "type": "STRING",
+        "description": "event details"
+    },
+    {
+        "name": "newsletterId",
+        "type": "STRING",
+        "description": "id of newsletter (if webapp)"
+    },
+    {
+        "name": "recipientHash",
+        "type": "STRING",
+        "description": "hash string of the recipient (for mail)"
+    },
+    {
+        "name": "url",
+        "type": "STRING",
+        "description": "link of headline (if click)"
+    },
+    {
+        "name": "durationSec",
+        "type": "INTEGER",
+        "description": "time spent on webapp"
+    },
+    {
+        "name": "userAgent",
+        "type": "STRING",
+        "description": "browser details of viewer"
+    }
+]

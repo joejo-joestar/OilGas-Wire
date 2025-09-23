@@ -80,7 +80,7 @@ function analyticsRedirect(params) {
     }
     var target = resolveAnalyticsTarget(nid);
     var event = { timestamp: new Date(), eventType: 'click', eventDetail: eventDetail || 'click', nid: nid, recipientHash: rid, src: src || (referer && referer.indexOf(allowedOrigin) === 0 ? 'web' : 'unknown'), url: finalUrl, ua: (params.ua || '') || '', referer: referer };
-    logAnalyticsEvent(target.spreadsheetId, event);
+    sendAnalyticsEvent(event);
     try {
         var dbgId2 = PropertiesService.getScriptProperties().getProperty('ANALYTICS_SPREADSHEET_ID');
         if (dbgId2) {
@@ -110,7 +110,7 @@ function analyticsPing(params) {
     var edt = (eventDetail || '').toString().toLowerCase();
     var evtType = (edt.indexOf('open') !== -1) ? 'open' : 'page_view';
     var event = { timestamp: new Date(), eventType: evtType, eventDetail: eventDetail || (evtType === 'page_view' ? 'page_view' : 'open'), nid: nid, recipientHash: rid, src: src || 'web', url: url, ua: (params.ua || '') || '', referer: (params.r || '') || '' };
-    logAnalyticsEvent(target.spreadsheetId, event);
+    sendAnalyticsEvent(event);
     return HtmlService.createHtmlOutput('');
 }
 
@@ -159,25 +159,32 @@ function signRedirectApi(body) {
 }
 
 function logEventApi(body) {
-    var evt = { timestamp: new Date(), eventType: (body.eventType || body.type || 'custom').toString(), eventDetail: (body.eventDetail || body.detail || '').toString(), nid: (body.nid || '').toString(), recipientHash: (body.rid || body.recipientHash || '').toString(), src: (body.src || '').toString(), url: (body.url || body.u || '').toString(), ua: (body.ua || '').toString(), referer: (body.referer || '').toString(), extra: body.extra || {} };
-    var target = resolveAnalyticsTarget(evt.nid);
-    logAnalyticsEvent(target.spreadsheetId, evt);
+    var payload = {
+        eventType: (body.eventType || 'custom').toString(),
+        eventDetail: (body.eventDetail || '').toString(),
+        newsletterId: (body.nid || '').toString(),
+        recipientHash: (body.rid || '').toString(),
+        url: (body.url || '').toString(),
+        userAgent: (body.ua || '').toString()
+    };
+    sendAnalyticsEvent(payload);
     return { ok: true };
 }
 
 function logActiveTimeApi(body) {
     try {
-        var nid = (body.nid || '').toString();
-        var rid = (body.rid || '').toString();
-        var secs = Number(body.secondsActive || body.seconds || 0) || 0;
-        var ua = (body.ua || '').toString();
-        var referer = (body.referer || '').toString();
-        var extra = body.extra || {};
-        var target = resolveAnalyticsTarget(nid);
-        var evt = { timestamp: new Date(), eventType: 'active_time', eventDetail: 'active_web_time', nid: nid, recipientHash: rid, src: 'web', url: (body.url || ''), ua: ua, referer: referer, extra: Object.assign({ seconds: secs }, extra) };
-        logAnalyticsEvent(target.spreadsheetId, evt);
+        var payload = {
+            eventType: 'active_time',
+            newsletterId: (body.nid || '').toString(),
+            recipientHash: (body.rid || '').toString(),
+            durationSec: Number(body.seconds || 0),
+            userAgent: (body.ua || '').toString()
+        };
+        sendAnalyticsEvent(payload);
         return { ok: true };
-    } catch (e) { return { ok: false, error: (e && e.message) || 'error' }; }
+    } catch (e) {
+        return { ok: false, error: (e && e.message) || 'error' };
+    }
 }
 
 function verifyApi(body) {

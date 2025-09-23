@@ -19,3 +19,5 @@ desktop.ini
 
 # Keep package-lock out
 package-lock.json
+
+# ignonore the cloud run service file

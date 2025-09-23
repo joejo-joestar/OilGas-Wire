@@ -1,63 +1,22 @@
-var ANALYTICS_DEFAULT_SHEET = 'Analytics_Events';
-var ANALYTICS_DAILY_SHEET = 'Analytics_Daily';
-
-function getDedupeWindowSeconds() {
-    var v = PropertiesService.getScriptProperties().getProperty('ANALYTICS_DEDUP_WINDOW_SECONDS') || '';
-    var n = Number(v) || 30;
-    return n;
-}
-
-function logAnalyticsEvent(targetSpreadsheetId, eventObj) {
+/**
+ * SharedAnalytics.gs - Updated for Cloud Run Endpoint
+ */
+function sendAnalyticsEvent(payload) {
+    const ANALYTICS_ENDPOINT = PropertiesService.getScriptProperties().getProperty('ANALYTICS_ENDPOINT');
+    if (!ANALYTICS_ENDPOINT) {
+        console.error("CRITICAL: ANALYTICS_ENDPOINT script property is not set.");
+        return;
+    }
+    const options = {
+        'method': 'post',
+        'contentType': 'application/json',
+        'muteHttpExceptions': true,
+        'payload': JSON.stringify(payload)
+    };
     try {
-        if (!targetSpreadsheetId) throw new Error('No target spreadsheet id');
-        var ss = SpreadsheetApp.openById(targetSpreadsheetId);
-        var sheet = ss.getSheetByName(ANALYTICS_DEFAULT_SHEET);
-        if (!sheet) {
-            sheet = ss.insertSheet(ANALYTICS_DEFAULT_SHEET);
-            sheet.appendRow(['timestamp', 'src', 'eventType', 'eventDetail', 'time', 'nid', 'recipientHash', 'recipientEmail', 'url', 'ua', 'referer', 'extra']);
-        }
-        if ((sheet.getLastRow() || 0) < 1) sheet.appendRow(['timestamp', 'src', 'eventType', 'eventDetail', 'time', 'nid', 'recipientHash', 'recipientEmail', 'url', 'ua', 'referer', 'extra']);
-        var timeVal = '';
-        try {
-            if (typeof eventObj.time !== 'undefined' && eventObj.time !== null) timeVal = Number(eventObj.time) || '';
-            else if (eventObj.extra && typeof eventObj.extra.seconds !== 'undefined') timeVal = Number(eventObj.extra.seconds) || '';
-        } catch (e) { timeVal = ''; }
-        // Try to resolve recipient email from mapping sheet (if present)
-        var recipientEmail = '';
-        try { recipientEmail = getRecipientEmailForHash(targetSpreadsheetId, eventObj.recipientHash || ''); } catch (e) { recipientEmail = ''; }
-        var row = [
-            eventObj.timestamp || new Date(),
-            eventObj.src || '',
-            eventObj.eventType || '',
-            eventObj.eventDetail || (eventObj.detail || '') || '',
-            timeVal,
-            eventObj.nid || '',
-            eventObj.recipientHash || '',
-            recipientEmail || '',
-            eventObj.url || '',
-            eventObj.ua || '',
-            eventObj.referer || '',
-            JSON.stringify(eventObj.extra || {})
-        ];
-        sheet.appendRow(row);
-        try {
-            var ds = ss.getSheetByName(ANALYTICS_DAILY_SHEET);
-            if (!ds) ds = ss.insertSheet(ANALYTICS_DAILY_SHEET);
-            var dateKey = Utilities.formatDate(new Date(eventObj.timestamp || new Date()), Session.getScriptTimeZone() || 'UTC', 'yyyy-MM-dd');
-            if ((ds.getLastRow() || 0) < 1) ds.appendRow(['date', 'eventType', 'nid', 'count']);
-            var rows = ds.getRange(2, 1, Math.max(0, ds.getLastRow() - 1), 4).getValues();
-            var found = false;
-            for (var i = 0; i < rows.length; i++) {
-                if (rows[i][0] === dateKey && rows[i][1] === eventObj.eventType && rows[i][2] === eventObj.nid) {
-                    var cur = Number(rows[i][3] || 0) + 1;
-                    ds.getRange(i + 2, 4).setValue(cur);
-                    found = true; break;
-                }
-            }
-            if (!found) ds.appendRow([dateKey, eventObj.eventType, eventObj.nid, 1]);
-        } catch (e) { /* ignore aggregate errors */ }
+        UrlFetchApp.fetch(ANALYTICS_ENDPOINT + '/track', options);
     } catch (e) {
-        Logger.log('logAnalyticsEvent error: ' + (e && e.message));
+        console.error("Failed to send analytics event. Error: " + e.toString());
     }
 }
 
@@ -105,66 +64,4 @@ function isTargetDomainAllowed(url) {
         }
         return false;
     } catch (e) { return false; }
-}
-
-function resolveAnalyticsTarget(nid) {
-    var props = PropertiesService.getScriptProperties();
-    var defaultId = props.getProperty('ANALYTICS_SPREADSHEET_ID');
-    if (!defaultId) throw new Error('Set ANALYTICS_SPREADSHEET_ID in Script Properties to point to your analytics spreadsheet');
-    return { spreadsheetId: defaultId };
-}
-
-function initAnalyticsSpreadsheet() {
-    var ss = SpreadsheetApp.openById(PropertiesService.getScriptProperties().getProperty('ANALYTICS_SPREADSHEET_ID'));
-    var s = ss.getSheetByName(ANALYTICS_DEFAULT_SHEET);
-    if (!s) ss.insertSheet(ANALYTICS_DEFAULT_SHEET).appendRow(['timestamp', 'src', 'eventType', 'eventDetail', 'time', 'nid', 'recipientHash', 'url', 'ua', 'referer', 'extra']);
-    var d = ss.getSheetByName(ANALYTICS_DAILY_SHEET);
-    if (!d) ss.insertSheet(ANALYTICS_DAILY_SHEET).appendRow(['date', 'eventType', 'nid', 'count']);
-    return true;
-}
-
-/**
- * Maintain a simple lookup sheet `Analytics_Recipients` mapping recipientHash -> email.
- * Call `recordRecipientHash(targetSpreadsheetId, hash, email)` when sending mails.
- */
-function recordRecipientHash(targetSpreadsheetId, hash, email) {
-    if (!targetSpreadsheetId || !hash || !email) return false;
-    try {
-        var ss = SpreadsheetApp.openById(targetSpreadsheetId);
-        var name = 'Analytics_Recipients';
-        var sh = ss.getSheetByName(name);
-        if (!sh) sh = ss.insertSheet(name);
-        if ((sh.getLastRow() || 0) < 1) sh.appendRow(['recipientHash', 'email']);
-        var last = sh.getLastRow() || 0;
-        var rows = [];
-        if (last >= 2) {
-            rows = sh.getRange(2, 1, last - 1, 2).getValues();
-        }
-        for (var i = 0; i < rows.length; i++) {
-            if ((rows[i][0] || '') === hash) {
-                // update email if changed
-                if ((rows[i][1] || '') !== email) sh.getRange(i + 2, 2).setValue(email);
-                return true;
-            }
-        }
-        sh.appendRow([hash, email]);
-        return true;
-    } catch (e) { Logger.log('recordRecipientHash error: ' + (e && e.message)); return false; }
-}
-
-function getRecipientEmailForHash(targetSpreadsheetId, hash) {
-    if (!targetSpreadsheetId || !hash) return '';
-    try {
-        var ss = SpreadsheetApp.openById(targetSpreadsheetId);
-        var name = 'Analytics_Recipients';
-        var sh = ss.getSheetByName(name);
-        if (!sh) return '';
-        var last = sh.getLastRow() || 0;
-        if (last < 2) return '';
-        var rows = sh.getRange(2, 1, last - 1, 2).getValues();
-        for (var i = 0; i < rows.length; i++) {
-            if ((rows[i][0] || '') === hash) return (rows[i][1] || '') || '';
-        }
-        return '';
-    } catch (e) { return ''; }
 }
