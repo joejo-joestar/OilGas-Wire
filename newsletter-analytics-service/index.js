@@ -23,8 +23,10 @@ app.post('/track', async (req, res) => {
 
     const row = {
         eventTimestamp: new Date().toISOString(),
+        src: event.src || 'unknown',
         eventType: event.eventType,
-        newsletterId: event.newsletterId,
+        eventDetail: event.eventDetail,
+        newsletterId: event.newsletterId || null,
         recipientHash: event.recipientHash || null,
         url: event.url || null,
         durationSec: event.durationSec || null,
