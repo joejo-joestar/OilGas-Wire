@@ -102,15 +102,14 @@ This project includes lightweight analytics for clicks, page views and active ti
 > [!NOTE]
 > [Node.js](https://nodejs.org/en/download) is required to run any of the follwoing commands.
 
-1. clone this repo:
+1. Clone this repo:
 
     ```bash
     git clone https://github.com/joejo-joestar/OilGas-Wire.git
+    cd OilGas-Wire
     ```
 
-2. cd into the directory
-
-3. run these commands:
+2. Run these commands:
 
     ```bash
     npm i
@@ -128,7 +127,7 @@ This project includes lightweight analytics for clicks, page views and active ti
     clasp push
     ```
 
-4. Open the project in the Apps Script editor.
+3. Open the project in the Apps Script editor.
 
 ### In Apps Script editor
 
