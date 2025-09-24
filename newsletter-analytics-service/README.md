@@ -24,7 +24,7 @@ This service collects and stores analytics events for newsletters, such as email
 2. **Set Up Google Cloud Project**:
     - Create a new project in the [Google Cloud Console](https://console.cloud.google.com/).
     - Enable the BigQuery API for your project.
-    - Create a BigQuery dataset and table to store analytics events. Create a table named `newsletter_events` with the schema defined in [`newsletter-analytics.events.json`](newsletter-analytics.events.json)
+    - Create a BigQuery dataset and table to store analytics events. Create a dataset named `newsletter_events` and a table called `events` in that dataset with the schema defined in [`newsletter_analytics.events.json`](newsletter_analytics.events.json)
 
 3. **Deploy to Google Cloud Run**:
     Use the following command to deploy the service to Google Cloud Run. Make sure you are in the `newsletter-analytics-service` directory.
@@ -44,5 +44,26 @@ This service collects and stores analytics events for newsletters, such as email
     Use the provided `curl` command in the cloud console to test the endpoint. Make sure to replace the URL with your deployed service URL.
 
     ```bash
-    curl -X POST "<SERVICE_URL>/track" -H "Authorization: bearer $(gcloud auth print-identity-token)" -H "Content-Type: application/json" -d '{  "src":"cloud-console", "eventType": "gui-test", "eventDetail": "console-test", "durationSec": "25", "newsletterId": "test-from-console", "url": "something" }'
+    curl -X POST "<SERVICE_URL>/track" -H "Authorization: bearer $(gcloud auth print-identity-token)" -H "Content-Type: application/json" -d '{  "src":"cloud-console", "eventType": "test-event", "eventDetail": "console-test", "durationSec": "25", "newsletterId": "test-from-console", "url": "https://www.oilandgas360.com/exxon-signs-initial-agreement-with-rosneft-to-chart-possible-path-to-recoup-russian-losses-sources-say/#utm_source=rss&utm_medium=rss&utm_campaign=exxon-signs-initial-agreement-with-rosneft-to-chart-possible-path-to-recoup-russian-losses-sources-say" }''
     ```
+
+    This command sends a test event with the following fields:
+
+    ```json
+    {
+        "src": "cloud-console",
+        "eventType": "test-event",
+        "eventDetail": "console-test",
+        "durationSec": "25",
+        "newsletterId": "test-from-console",
+        "url": "https://www.oilandgas360.com/exxon-signs-initial-agreement-with-rosneft-to-chart-possible-path-to-recoup-russian-losses-sources-say/#utm_source=rss&utm_medium=rss&utm_campaign=exxon-signs-initial-agreement-with-rosneft-to-chart-possible-path-to-recoup-russian-losses-sources-say"
+    }
+    ```
+
+    Which will be stored in the `events` table as such:
+
+    <p align="center">
+    <img src="../assets/bigquery sample.png" alt="BigQuery Record" title="BigQuery Record" width="600" >
+    </p>
+
+---

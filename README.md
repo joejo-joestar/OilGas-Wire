@@ -155,7 +155,13 @@ OilGas-Wire/
 ├── package.json
 ├── README.md
 ├── assets/
-└── src/
+├── newsletter-analytics-service/  # The GCP service for analytics
+│   ├── Dockerfile
+│   ├── package.json
+│   ├── index.js
+│   ├── newsletter_analytics.events.json
+│   └── README.md
+└── newsletter-scripts/  # The main Apps Script project
     ├── appsscript.json
     ├── AutoMailer.gs
     ├── Config.gs
@@ -168,7 +174,7 @@ OilGas-Wire/
     ├── Styles_Web.html
     ├── Triggers.gs
     ├── Web_Preview.html
-    ├── Analytics/
+    ├── Analytics/  # Analytics-related scripts
     │   ├── MailAnalytics.gs
     │   ├── SheetsAnalytics.gs
     │   ├── SharedAnalytics.gs
