@@ -9,7 +9,7 @@ This service collects and stores analytics events for newsletters, such as email
 >
 > You will also need to have the Google Cloud SDK installed and configured on your local machine.
 >
-> Refer to the [installation documentation](https://cloud.google.com/sdk/docs/install) for installation instructions and the [initialization documetation](https://cloud.google.com/sdk/docs/initializing) for configuration instructions.
+> Refer to the [installation documentation](https://cloud.google.com/sdk/docs/install) for installation instructions and the [initialization documentation](https://cloud.google.com/sdk/docs/initializing) for configuration instructions.
 >
 > Make sure you have the necessary permissions to create and manage resources in your Google Cloud project.
 
