@@ -85,6 +85,9 @@ function renderNewsletterWebHtml(data) {
     tpl.nid = data.nid || '';
     // provide deployed webapp URL to the template so client JS can call the JSON API reliably
     try { tpl.webappUrl = data.webappUrl || PropertiesService.getScriptProperties().getProperty('WEBAPP_URL') || ''; } catch (e) { tpl.webappUrl = data.webappUrl || ''; }
+    // Optionally expose a validated RID to the client-side template. This should be provided by doGet
+    // only when the incoming request included a valid signature and rid.
+    try { tpl.RID = data.rid || ''; } catch (e) { tpl.RID = ''; }
     // evaluate() returns an HtmlOutput; getContent() returns a string.
     // Return the HTML string here. The caller (doGet) will wrap it into an HtmlOutput
     // and can call setTitle() there.
@@ -295,6 +298,7 @@ function doGet(e) {
     // If the webapp was opened via a signed CTA link from email, verify the signature
     // and log a mail_web_click event server-side. Expected query params appended by
     // the mailer: rid=<hex>, src=<source>, eventDetail=<detail>, sig=<hmac>
+    var verifiedRid = '';
     try {
         if (e && e.parameter && e.parameter.rid && e.parameter.sig) {
             try {
@@ -303,14 +307,25 @@ function doGet(e) {
                 var src_q = (q.src || 'mail').toString();
                 var eventDetail_q = (q.eventDetail || q.detail || 'mail_web_click').toString();
                 var nid_q = (q.nid || '') || '';
-                // Reconstruct the target URL that the mailer signed: WEBAPP_URL with ?date=...
+                // Reconstruct the target URL that the mailer signed.
+                // Prefer an explicit `signed_target` param (base64 encoded) if present
+                // — analyticsRedirect forwards that to preserve the originally-signed URL.
                 var fullUrl = '';
                 try {
-                    var base = (PropertiesService.getScriptProperties().getProperty('WEBAPP_URL') || '').toString();
-                    if (base) {
-                        var datep = (e.parameter.date || '');
-                        var sep = base.indexOf('?') === -1 ? '?' : '&';
-                        fullUrl = base + (datep ? (sep + 'date=' + encodeURIComponent(datep)) : '');
+                    if (e && e.parameter && e.parameter.signed_target) {
+                        try {
+                            fullUrl = Utilities.newBlob(Utilities.base64Decode(decodeURIComponent(e.parameter.signed_target))).getDataAsString();
+                        } catch (ie) { fullUrl = decodeURIComponent(e.parameter.signed_target || ''); }
+                    }
+                } catch (errSigned) { fullUrl = ''; }
+                try {
+                    if (!fullUrl) {
+                        var base = (PropertiesService.getScriptProperties().getProperty('WEBAPP_URL') || '').toString();
+                        if (base) {
+                            var datep = (e.parameter.date || '');
+                            var sep = base.indexOf('?') === -1 ? '?' : '&';
+                            fullUrl = base + (datep ? (sep + 'date=' + encodeURIComponent(datep)) : '');
+                        }
                     }
                 } catch (ee) { fullUrl = ''; }
                 var sigBase = (nid_q || '') + '|' + (rid_q || '') + '|' + (fullUrl || '') + '|' + (src_q || '') + '|' + (eventDetail_q || '');
@@ -321,6 +336,8 @@ function doGet(e) {
                         var target = resolveAnalyticsTarget(nid_q);
                         var evt = { timestamp: new Date(), eventType: 'click', eventDetail: eventDetail_q || 'mail_web_click', nid: nid_q || '', recipientHash: rid_q, src: src_q || 'mail', url: fullUrl || '', ua: (e && e.headers && (e.headers['User-Agent'] || e.headers['user-agent'])) || '', referer: (e && e.parameter && e.parameter.r) || '' };
                         try { sendAnalyticsEvent(evt); } catch (se) { Logger.log('sendAnalyticsEvent error: ' + (se && se.message)); }
+                        // expose the validated rid to the template so client JS can use it for subsequent events
+                        verifiedRid = rid_q || '';
                     } catch (le) { /* ignore logging errors */ }
                 }
             } catch (err) { /* ignore verification errors */ }
@@ -337,7 +354,8 @@ function doGet(e) {
     var sheetId = getSheetId();
     var feedSheetUrl = 'https://docs.google.com/spreadsheets/d/' + sheetId + '/';
     var nid = 'newsletter-' + Utilities.formatDate(new Date(targetDate), Session.getScriptTimeZone() || 'UTC', 'yyyy-MM-dd');
-    var html = renderNewsletterWebHtml({ sections: sections, dateRangeText: drText, feedSheetUrl: feedSheetUrl, nid: nid });
+    try { Logger.log('doGet: rendering web page with verifiedRid=%s', verifiedRid); } catch (e) { }
+    var html = renderNewsletterWebHtml({ sections: sections, dateRangeText: drText, feedSheetUrl: feedSheetUrl, nid: nid, rid: verifiedRid });
     return HtmlService.createHtmlOutput(html).setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL).setTitle('Business Excellence Newsletter');
 }
 

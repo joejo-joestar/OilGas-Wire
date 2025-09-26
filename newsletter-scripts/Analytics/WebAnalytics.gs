@@ -66,6 +66,8 @@ function analyticsRedirect(params) {
     }
     var target = resolveAnalyticsTarget(nid);
     var event = { timestamp: new Date(), eventType: 'click', eventDetail: eventDetail || 'click', nid: nid, recipientHash: rid, src: src || (referer && referer.indexOf(allowedOrigin) === 0 ? 'webapp' : 'unknown'), url: finalUrl, ua: (params.ua || '') || '', referer: referer };
+    // recipientHash is the canonical id; ensure it's set
+    event.recipientHash = event.recipientHash || rid || '';
     // Optionally attach server-side user identity (PII). Enable by setting ANALYTICS_LOG_USER=true in Script Properties.
     try {
         if (PropertiesService.getScriptProperties().getProperty('ANALYTICS_LOG_USER') === 'true') {
@@ -78,9 +80,75 @@ function analyticsRedirect(params) {
         var rua2 = (params.ua || '') || (params['user-agent'] || '');
         Logger.log('analytics: logged_redirect nid=%s rid=%s src=%s eventDetail=%s finalUrl=%s referer=%s ua=%s', nid, rid, src, eventDetail, finalUrl, referer, rua2);
     } catch (e) { /* ignore */ }
+    // If the finalUrl is same-origin (the webapp) and we verified the signature,
+    // prefer to render the newsletter server-side with the validated rid injected.
+    try {
+        var webOriginCheck = getWebappOrigin() || '';
+        if (verified && webOriginCheck && finalUrl && finalUrl.indexOf(webOriginCheck) === 0) {
+            try {
+                // Extract a date parameter if present so we can render the right newsletter
+                var dateParam = null;
+                var mDate = finalUrl.match(/[?&]date=([^&]+)/i);
+                if (mDate && mDate[1]) dateParam = decodeURIComponent(mDate[1]);
+                var sections = [];
+                try { sections = buildVisibleSectionsForDate(dateParam); } catch (e) { sections = []; }
+                var targetDate = dateParam || Utilities.formatDate(new Date(new Date().getTime() - 24 * 60 * 60 * 1000), Session.getScriptTimeZone() || 'UTC', 'yyyy-MM-dd');
+                var drText = Utilities.formatDate(new Date(targetDate), Session.getScriptTimeZone() || 'UTC', 'MMM d, yyyy');
+                var sheetId = getSheetId();
+                var feedSheetUrl = 'https://docs.google.com/spreadsheets/d/' + sheetId + '/';
+                var nid_local = 'newsletter-' + Utilities.formatDate(new Date(targetDate), Session.getScriptTimeZone() || 'UTC', 'yyyy-MM-dd');
+                // Render the web template and inject the verified recipientHash (rid)
+                var html = renderNewsletterWebHtml({ sections: sections, dateRangeText: drText, feedSheetUrl: feedSheetUrl, nid: nid_local, rid: rid });
+                return HtmlService.createHtmlOutput(html).setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL).setTitle('Business Excellence Newsletter');
+            } catch (e) { /* fall back to redirect meta tag below on any render error */ }
+        }
+    } catch (e) { /* ignore rendering errors and fall back to redirect */ }
+
     function escapeHtmlAttr(s) { try { return (s || '').toString().replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); } catch (e) { return ''; } }
     var safeHtml = '<!doctype html><html><head><meta charset="utf-8"><meta name="robots" content="noindex">' +
-        '<meta http-equiv="refresh" content="0;url=' + escapeHtmlAttr(finalUrl) + '">' +
+        // Ensure finalUrl carries the rid so the destination (e.g. the webapp) can pick up the visitor id.
+        (function () {
+            try {
+                var f = finalUrl || '';
+                var ridParam = (rid || '').toString();
+                var sigParam = (sig || '').toString();
+                var webOrigin = getWebappOrigin();
+                // Append rid if provided and not already present
+                if (ridParam && f.indexOf('rid=') === -1) {
+                    var hashIndex = f.indexOf('#');
+                    var hash = '';
+                    if (hashIndex !== -1) { hash = f.substring(hashIndex); f = f.substring(0, hashIndex); }
+                    var sep = f.indexOf('?') === -1 ? '?' : '&';
+                    f = f + sep + 'rid=' + encodeURIComponent(ridParam) + hash;
+                }
+                // If redirect target is the webapp itself, also propagate the signature so doGet can verify
+                try {
+                    if (sigParam && webOrigin && f.indexOf(webOrigin) === 0 && f.indexOf('sig=') === -1) {
+                        var hashIndex2 = f.indexOf('#');
+                        var hash2 = '';
+                        if (hashIndex2 !== -1) { hash2 = f.substring(hashIndex2); f = f.substring(0, hashIndex2); }
+                        var sep2 = f.indexOf('?') === -1 ? '?' : '&';
+                        f = f + sep2 + 'sig=' + encodeURIComponent(sigParam) + hash2;
+                    }
+                } catch (e) { /* ignore signature propagation failures */ }
+                // Propagate the original base64-encoded target so the final webapp can
+                // reconstruct the exact URL that was originally signed. This helps
+                // verification when WEBAPP_URL in script properties doesn't exactly
+                // match the runtime incoming URL (different deployments, domains).
+                try {
+                    if (t && webOrigin && f.indexOf(webOrigin) === 0 && f.indexOf('signed_target=') === -1) {
+                        var hashIndex3 = f.indexOf('#');
+                        var hash3 = '';
+                        if (hashIndex3 !== -1) { hash3 = f.substring(hashIndex3); f = f.substring(0, hashIndex3); }
+                        var sep3 = f.indexOf('?') === -1 ? '?' : '&';
+                        // `t` is the base64-encoded original target as received in the redirect params
+                        f = f + sep3 + 'signed_target=' + encodeURIComponent(t) + hash3;
+                    }
+                } catch (e) { /* ignore signed_target propagation failures */ }
+                try { Logger.log('analyticsRedirect: forwarding to finalUrl=%s (rid present=%s, sigPresent=%s)', f, !!ridParam, !!sigParam); } catch (e) { /* ignore logging errors */ }
+                return '<meta http-equiv="refresh" content="0;url=' + escapeHtmlAttr(f) + '">';
+            } catch (e) { return '<meta http-equiv="refresh" content="0;url=' + escapeHtmlAttr(finalUrl) + '">'; }
+        })() +
         '</head><body><p>Redirecting&hellip; If you are not redirected, <a href="' + escapeHtmlAttr(finalUrl) + '">click here</a>.</p></body></html>';
     return HtmlService.createHtmlOutput(safeHtml).setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
 }
@@ -96,6 +164,8 @@ function analyticsPing(params) {
     var edt = (eventDetail || '').toString().toLowerCase();
     var evtType = (edt.indexOf('open') !== -1) ? 'open' : 'page_view';
     var event = { timestamp: new Date(), eventType: evtType, eventDetail: eventDetail || (evtType === 'page_view' ? 'page_view' : 'open'), nid: nid, recipientHash: rid, src: src || 'webapp', url: url, ua: (params.ua || '') || '', referer: (params.r || '') || '' };
+    // recipientHash is the canonical id; ensure it's set
+    event.recipientHash = event.recipientHash || rid || '';
     try {
         if (PropertiesService.getScriptProperties().getProperty('ANALYTICS_LOG_USER') === 'true') {
             try { var ue2 = Session.getActiveUser && Session.getActiveUser().getEmail ? Session.getActiveUser().getEmail() : ''; if (ue2) event.userEmail = ue2; } catch (e) { /* ignore */ }
@@ -149,7 +219,8 @@ function logEventApi(body) {
         eventType: (body.eventType || 'custom').toString(),
         eventDetail: (body.eventDetail || '').toString(),
         newsletterId: (body.nid || '').toString(),
-        recipientHash: (body.rid || '').toString(),
+        // canonical recipient id: prefer explicit recipientHash, else fall back to rid
+        recipientHash: (body.recipientHash || body.rid || '').toString(),
         url: (body.url || '').toString(),
         userAgent: (body.ua || '').toString(),
         src: (body.src || 'webapp').toString()
@@ -163,7 +234,8 @@ function logActiveTimeApi(body) {
         var payload = {
             eventType: 'active_time',
             newsletterId: (body.nid || '').toString(),
-            recipientHash: (body.rid || '').toString(),
+            // canonical recipient id: prefer explicit recipientHash, else fall back to rid
+            recipientHash: (body.recipientHash || body.rid || '').toString(),
             durationSec: Number(body.seconds || 0),
             userAgent: (body.ua || '').toString(),
             src: (body.src || 'webapp').toString()

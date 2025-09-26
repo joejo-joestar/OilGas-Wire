@@ -20,7 +20,7 @@ function sendAnalyticsEvent(payload) {
         // newsletter id mapping
         out.newsletterId = payload.newsletterId || payload.nid || '';
 
-        // recipient / hashed id
+        // recipient / hashed id (canonical)
         out.recipientHash = payload.recipientHash || payload.rid || '';
 
         // url / user agent / referer
@@ -159,4 +159,21 @@ function computeSha256Hex(value) {
         }
         return hex;
     } catch (e) { return ''; }
+}
+
+/**
+ * Resolve analytics target metadata for a given newsletter id (nid).
+ * This helper is intentionally lightweight and defensive: it should never throw
+ * and provides minimal metadata used by analytics handlers.
+ * @param {string} nid
+ * @return {{nid: string, webappOrigin: string, allowed: boolean}}
+ */
+function resolveAnalyticsTarget(nid) {
+    try {
+        var id = (nid || '').toString();
+        var origin = getWebappOrigin() || '';
+        return { nid: id, webappOrigin: origin, allowed: true };
+    } catch (e) {
+        return { nid: (nid || '').toString(), webappOrigin: '', allowed: false };
+    }
 }
