@@ -84,3 +84,15 @@ bq load --autodetect --source_format=CSV newsletter_analytics.recipient_mappings
 Make sure the table exists (see `ddl_recipient_mappings.sql`) and that the account running the import has write access to BigQuery.
 
 Recommended workflow: Keep the backend table `recipient_mappings` as the source-of-truth. Use periodic imports from your sheet when needed, and keep `ANALYTICS_SEND_MAPPINGS` disabled in Apps Script unless you want Apps Script to send incremental mapping updates during sends.
+
+## Shortlink support (single-use tokens)
+
+This service also provides a shortlink API to create short-lived, single-use tokens that map to a final target URL. Use this when you want to ensure the analytics service receives the click before redirecting to a third-party site (useful for redirectors that strip query params).
+
+- POST /shortlink: create a token. Request body: `{ url, nid, rid, ttlSeconds }`. The service returns `{ ok: true, token, path, expiresAt }`.
+- GET /s/:token: resolve a token, log a shortlink_click event, and issue an HTTP 302 redirect to the stored URL. Tokens are single-use and expire after the requested TTL (clamped to a maximum).
+
+Notes:
+
+- The current implementation uses an in-memory token store (suitable for single-instance testing). For production or multi-instance deployments, use a persistent store like Redis to share tokens between instances and ensure tokens survive service restarts.
+- Default token lifetime used by Apps Script is 60 seconds and tokens are created as single-use by default.

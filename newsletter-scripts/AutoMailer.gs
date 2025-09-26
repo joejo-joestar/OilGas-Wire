@@ -449,7 +449,9 @@ function sendDailyNewsletter() {
             });
         });
 
-        var perFullNewsletterUrl = fullNewsletterUrl ? buildAnalyticsRedirectUrl(fullNewsletterUrl, nid, rid, 'mail', 'mail_web_click') : '';
+        // For the full-newsletter CTA, preserve the old webapp CTA logic so the web
+        // newsletter receives a verified `rid`. Do not use shortlink for this one.
+        var perFullNewsletterUrl = fullNewsletterUrl ? buildAnalyticsRedirectUrl(fullNewsletterUrl, nid, rid, 'mail', 'mail_web_click', false) : '';
         var perFeedSheetUrl = buildAnalyticsRedirectUrl(feedSheetUrl, nid, rid, 'mail', 'mail_sheet_click');
         var perPixel = buildAnalyticsPixelUrl(nid, rid, 'mail', 'email_open');
 
