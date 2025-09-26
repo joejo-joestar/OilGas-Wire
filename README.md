@@ -34,8 +34,11 @@ Key properties (set in Project Settings → Script properties):
 | Property                   | Description                                                                                                                   | Required / Notes                           |
 | -------------------------- | ----------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------ |
 | `SHEET_ID`                 | ID of the Google Sheet that stores feed tabs and feed data                                                                    | Required                                   |
-| `ANALYTICS_SPREADSHEET_ID` | Spreadsheet ID where analytics events are logged (Analytics_Events, Analytics_Daily)                                          | Recommended (for tracking)                 |
+| `ANALYTICS_SPREADSHEET_ID` | (Deprecated) Spreadsheet ID where analytics events are logged (Analytics_Events, Analytics_Daily). Prefer `ANALYTICS_ENDPOINT`. | Optional - deprecated                       |
+| `ANALYTICS_ENDPOINT`       | URL of an analytics endpoint that accepts POST /track JSON events (recommended). Example: a deployed `newsletter-analytics-service` | Recommended (for robust tracking)          |
+| `ANALYTICS_LOG_USER`       | When set to `true`, the webapp will attach the server-side active user's email (Session.getActiveUser().getEmail()) to events sent to `ANALYTICS_ENDPOINT`. Use with care (PII). | Optional (default: false) |
 | `ANALYTICS_SECRET`         | Some secret string ([base64](https://www.base64encode.org/)) to perform very basic [HMAC](https://en.wikipedia.org/wiki/HMAC) | Recommended (for tracking)                 |
+| `ANALYTICS_SEND_MAPPINGS`  | When set to `true`, the mailer will POST incremental rid->email mappings to the analytics backend during sends. Default: `false`. | Optional (default: false) |
 | `SEND_TO`                  | Comma-separated list of recipient emails for the newsletter                                                                   | Required unless `TEST_RECIPIENT` is set    |
 | `TEST_RECIPIENT`           | Sends newsletter only to this address (overrides `SEND_TO`), useful for testing                                               | Optional (use for safe testing)            |
 | `WEBAPP_URL`               | Deployed Web App URL used for the web preview and analytics POST fallback                                                     | Optional (set to enable web preview links) |
@@ -61,13 +64,25 @@ Once deployed, recipients can open `WEBAPP_URL?date=YYYY-MM-DD` to view a full n
 This project includes lightweight analytics for clicks, page views and active time:
 
 - `WebAnalytics.gs` exposes a `doPost(e)` JSON API that accepts `logEvent` and `logActiveTime` actions and forwards them to `logEventApi` / `logActiveTimeApi`.
-- `SharedAnalytics.gs` provides `logAnalyticsEvent()` which writes structured rows to the `Analytics_Events` sheet (and a daily aggregate table).
+- `SharedAnalytics.gs` provides `sendAnalyticsEvent()` which POSTs a normalized JSON payload to `ANALYTICS_ENDPOINT` when configured. This is the recommended way to collect analytics. If `ANALYTICS_ENDPOINT` is not set the function logs an error and is a no-op.
+
+### Recommended: Backend-owned recipient mapping (rid -> email)
+
+For privacy and reliability we recommend keeping the authoritative mapping of `rid` (recipientHash) -> `email` in your analytics backend (BigQuery `recipient_mappings` table). That lets the Apps Script side send only `recipientHash` in events while your backend joins events to identities when necessary.
+
+- Workflow:
+
+- Bulk import your existing sheet's mapping into BigQuery (or load directly from Google Sheets into BigQuery). See `newsletter-analytics-service/ddl_recipient_mappings.sql` for the table layout.
+
+- Keep `ANALYTICS_SEND_MAPPINGS` disabled (default). If you want incremental updates during sends, set `ANALYTICS_SEND_MAPPINGS=true` to allow the mailer to POST mappings to the backend.
+This keeps PII out of the event stream by default and lets you manage mappings in a central, auditable place.
 
 <p align="center">
 <img src="assets/analytics_sheet.png" alt="Analytics Sheets" title="Analytics Sheets" width="600" >
 </p>
 
 - `Newsletter_Web.html` now includes a `trackClick(payload)` helper that:
+
   - Uses `google.script.run` when served by HtmlService, or
   - Uses `navigator.sendBeacon` to POST JSON to `WEBAPP_URL`, falling back to `fetch()` if needed.
 
@@ -77,12 +92,23 @@ This project includes lightweight analytics for clicks, page views and active ti
 <br/>
 
 > [!NOTE]
-> Set `ANALYTICS_SPREADSHEET_ID` to enable event writes. The code uses `computeHmacHex` / `verifyHmacHex` helpers if you later add signed redirects.
+> Prefer setting `ANALYTICS_ENDPOINT` to an HTTP(S) endpoint that accepts POST /track JSON events (the repo includes a sample service in `newsletter-analytics-service/`).
+>
+> If you still rely on spreadsheet-based analytics, `ANALYTICS_SPREADSHEET_ID` is still supported but deprecated — the codebase now prefers POSTing events to `ANALYTICS_ENDPOINT`.
+
+> [!CAUTION]
+> If you enable `ANALYTICS_LOG_USER=true`, the webapp will attempt to attach the server-side active user's email address to analytics events. This exposes personally-identifiable information (PII) to your analytics backend and may have legal/privacy implications depending on your jurisdiction and policy. Only enable if you have consent and a clear retention policy.
 
 <br/>
 
 > [!TIP]
-> You can implement a separate backend for more robust analytics, e.g. using Google Cloud Functions + Firestore or BigQuery.
+> Example curl for posting to the analytics endpoint included with this repo (replace with your deployed URL):
+
+```bash
+curl -X POST "<your analytics url>/track" \
+  -H "Content-Type: application/json" \
+  -d '{"src":"source","eventType":"test","eventDetail":"test-details","durationSec":"25","newsletterId":"someID","url":"example.com","recipientHash":"hashed-id","ua":"user-agent-string"}'
+```
 
 ---
 

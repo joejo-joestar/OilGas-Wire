@@ -67,3 +67,20 @@ This service collects and stores analytics events for newsletters, such as email
     </p>
 
 ---
+
+## Importing existing recipient mappings (recommended)
+
+If you already have a CSV that maps `rid` (recipientHash) to email addresses, import it into BigQuery so the backend can join events to identities without Apps Script sending raw PII.
+
+1. Export your data as CSV with columns: `recipientHash,email,newsletterId`.
+2. Use the BigQuery UI or `bq` command-line tool to load the CSV into your dataset's `recipient_mappings` table.
+
+Example `bq` command:
+
+```bash
+bq load --autodetect --source_format=CSV newsletter_analytics.recipient_mappings ./mappings.csv
+```
+
+Make sure the table exists (see `ddl_recipient_mappings.sql`) and that the account running the import has write access to BigQuery.
+
+Recommended workflow: Keep the backend table `recipient_mappings` as the source-of-truth. Use periodic imports from your sheet when needed, and keep `ANALYTICS_SEND_MAPPINGS` disabled in Apps Script unless you want Apps Script to send incremental mapping updates during sends.
