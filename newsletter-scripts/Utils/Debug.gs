@@ -94,3 +94,80 @@ function debugOpenSheet() {
         throw e;
     }
 }
+
+/**
+ * Test helper: send a sample analytics event to the configured ANALYTICS_ENDPOINT
+ * Run this from the Apps Script editor to verify your analytics endpoint is reachable
+ * and that the sendAnalyticsEvent normalization works as expected.
+ */
+function testSendAnalyticsEvent() {
+    try {
+        var ep = PropertiesService.getScriptProperties().getProperty('ANALYTICS_ENDPOINT') || '';
+        Logger.log('TEST: ANALYTICS_ENDPOINT=%s', ep ? ep : '(not set)');
+        var payload = {
+            src: 'debug-runner',
+            eventType: 'gui-test',
+            eventDetail: 'debug_send_test',
+            nid: 'test-newsletter-2025-09-26',
+            rid: 'test-recipient-hash',
+            url: 'https://example.com/test',
+            ua: 'DebugClient/1.0',
+            extra: { debug: true }
+        };
+        try {
+            sendAnalyticsEvent(payload);
+            Logger.log('TEST: sendAnalyticsEvent() called — check your analytics endpoint logs.');
+        } catch (e) { Logger.log('TEST ERROR calling sendAnalyticsEvent: %s', e && e.message); }
+
+        // Also test the recipient mapping POST (storeRecipientMapping)
+        try {
+            storeRecipientMapping('test-recipient-hash', 'test@example.com', payload.nid);
+            Logger.log('TEST: storeRecipientMapping() called — check your analytics endpoint logs.');
+        } catch (e) { Logger.log('TEST ERROR calling storeRecipientMapping: %s', e && e.message); }
+    } catch (e) {
+        Logger.log('testSendAnalyticsEvent error: %s', e && e.message);
+    }
+}
+
+/**
+ * Bootstrap recipient mappings from the configured SEND_TO / TEST_RECIPIENT script properties.
+ * This is a convenience helper for users who do not have an existing sheet of mappings.
+ * It computes the same `rid` used by the mailer (SHA-256 hex of lowercased email)
+ * and calls `storeRecipientMapping(rid, email, newsletterId)` for each recipient.
+ * Run this manually in the Apps Script editor to populate your analytics backend's mapping table.
+ */
+function bootstrapRecipientMappingsFromSendList() {
+    try {
+        var props = PropertiesService.getScriptProperties();
+        var ep = props.getProperty('ANALYTICS_ENDPOINT') || '';
+        if (!ep) {
+            Logger.log('bootstrapRecipientMappingsFromSendList: ANALYTICS_ENDPOINT is not set. Set it before running.');
+            return;
+        }
+
+        var testRecipient = (props.getProperty('TEST_RECIPIENT') || '').trim();
+        var sendTo = (props.getProperty('SEND_TO') || '').split(',').map(function (s) { return (s || '').trim(); }).filter(Boolean);
+        if (testRecipient) sendTo = [testRecipient];
+
+        if (!sendTo || !sendTo.length) {
+            Logger.log('bootstrapRecipientMappingsFromSendList: No recipients found in SEND_TO or TEST_RECIPIENT.');
+            return;
+        }
+
+        var nid = 'bootstrap-' + Utilities.formatDate(new Date(), Session.getScriptTimeZone() || 'UTC', "yyyy-MM-dd'T'HH:mm:ss");
+
+        sendTo.forEach(function (recipient) {
+            try {
+                var rid = Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256, recipient.trim().toLowerCase()).map(function (b) {
+                    return ('0' + (b & 0xFF).toString(16)).slice(-2);
+                }).join('');
+                storeRecipientMapping(rid, recipient, nid);
+                Logger.log('bootstrapRecipientMappingsFromSendList: posted mapping for %s -> %s', rid, recipient);
+            } catch (e) {
+                Logger.log('bootstrapRecipientMappingsFromSendList: failed for %s: %s', recipient, e && e.message);
+            }
+        });
+    } catch (e) {
+        Logger.log('bootstrapRecipientMappingsFromSendList error: %s', e && e.message);
+    }
+}

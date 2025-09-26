@@ -124,7 +124,7 @@
                 var feedSheetUrl = '<?= feedSheetUrl ?>';
                 var webappUrl = '<?= webappUrl ?>';
                 var u = location.href;
-                var url = (location.origin + location.pathname) + '?analytics=ping&nid=' + encodeURIComponent(nid) + '&rid=' + encodeURIComponent(rid) + '&u=' + encodeURIComponent(u) + '&src=' + encodeURIComponent('web') + '&eventDetail=' + encodeURIComponent('page_view');
+                var url = (location.origin + location.pathname) + '?analytics=ping&nid=' + encodeURIComponent(nid) + '&rid=' + encodeURIComponent(rid) + '&u=' + encodeURIComponent(u) + '&src=' + encodeURIComponent('webapp') + '&eventDetail=' + encodeURIComponent('page_view');
                 // Use navigator.sendBeacon when available
                 if (navigator && navigator.sendBeacon) {
                     navigator.sendBeacon(url, null);
@@ -168,7 +168,7 @@
                         eventDetail: eventDetail,
                         nid: nid,
                         rid: rid || '',
-                        src: 'web',
+                        src: 'webapp',
                         url: href,
                         ua: (navigator && navigator.userAgent) || '',
                         referer: location.href
@@ -200,7 +200,7 @@
                         eventDetail: eventDetail,
                         nid: nid,
                         rid: rid || '',
-                        src: 'web',
+                        src: 'webapp',
                         url: href,
                         ua: (navigator && navigator.userAgent) || '',
                         referer: location.href
@@ -240,7 +240,7 @@
                 if (runningSince) { accumulated += now - runningSince; runningSince = now; }
                 var seconds = Math.floor(accumulated / 1000);
                 if (seconds <= 0 && !final) return; // nothing to send
-                var payload = { action: 'logActiveTime', nid: nid || '', rid: rid || '', seconds: seconds, ua: (navigator && navigator.userAgent) || '', referer: location.href };
+                var payload = { action: 'logActiveTime', nid: nid || '', rid: rid || '', seconds: seconds, src: 'webapp', ua: (navigator && navigator.userAgent) || '', referer: location.href };
                 accumulated = 0; // reset local counter after scheduling send
 
                 // Prefer google.script.run when available inside Apps Script HtmlService

@@ -320,7 +320,7 @@ function doGet(e) {
                     try {
                         var target = resolveAnalyticsTarget(nid_q);
                         var evt = { timestamp: new Date(), eventType: 'click', eventDetail: eventDetail_q || 'mail_web_click', nid: nid_q || '', recipientHash: rid_q, src: src_q || 'mail', url: fullUrl || '', ua: (e && e.headers && (e.headers['User-Agent'] || e.headers['user-agent'])) || '', referer: (e && e.parameter && e.parameter.r) || '' };
-                        logAnalyticsEvent(target.spreadsheetId, evt);
+                        try { sendAnalyticsEvent(evt); } catch (se) { Logger.log('sendAnalyticsEvent error: ' + (se && se.message)); }
                     } catch (le) { /* ignore logging errors */ }
                 }
             } catch (err) { /* ignore verification errors */ }
@@ -445,8 +445,16 @@ function sendDailyNewsletter() {
         try {
             MailApp.sendEmail({ to: recipient, subject: 'Business Excellence Newsletter - ' + drText, htmlBody: perHtml, body: bodyPlain, name: 'Business Excellence Newsletter' });
             Logger.log('Successfully sent newsletter to %s', recipient);
-            var analyticsTarget = resolveAnalyticsTarget(nid);
-            recordRecipientHash(analyticsTarget.spreadsheetId, rid, recipient);
+            try {
+                // Optionally send recipientHash -> email mapping to analytics backend.
+                // Controlled by ANALYTICS_SEND_MAPPINGS script property. Default: disabled.
+                var sendMappings = (PropertiesService.getScriptProperties().getProperty('ANALYTICS_SEND_MAPPINGS') || '') === 'true';
+                if (sendMappings) {
+                    storeRecipientMapping(rid, recipient, nid);
+                }
+            } catch (e) {
+                Logger.log('Failed to store recipient mapping: ' + (e && e.message));
+            }
         } catch (e) {
             Logger.log('Failed to send newsletter to %s. Error: %s', recipient, e.message);
         }

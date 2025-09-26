@@ -96,12 +96,7 @@ function processCachedClicks() {
     // Clear the cache immediately to prevent reprocessing
     cache.remove(key);
 
-    var targetId = PropertiesService.getScriptProperties().getProperty('ANALYTICS_SPREADSHEET_ID');
-    if (!targetId) {
-        Logger.log('Cannot process cached clicks: ANALYTICS_SPREADSHEET_ID is not set.');
-        return;
-    }
-
+    // Send cached clicks to central analytics endpoint (if configured) instead
     clicks.forEach(function (click) {
         try {
             var evt = {
@@ -115,10 +110,10 @@ function processCachedClicks() {
                 ua: '',
                 referer: ''
             };
-            logAnalyticsEvent(targetId, evt);
-            Logger.log('Sent cached click to analytics: ' + click.url);
+            try { sendAnalyticsEvent(evt); } catch (se) { Logger.log('sendAnalyticsEvent error: ' + (se && se.message)); }
+            Logger.log('Sent cached click to analytics endpoint: ' + click.url);
         } catch (e) {
-            Logger.log('Error logging a cached click event: ' + e.message);
+            Logger.log('Error processing a cached click event: ' + (e && e.message));
         }
     });
 }

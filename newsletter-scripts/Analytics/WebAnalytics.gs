@@ -22,16 +22,11 @@ function analyticsRedirect(params) {
     var url = '';
     try { url = Utilities.newBlob(Utilities.base64Decode(t)).getDataAsString(); } catch (e) { url = decodeURIComponent(t || ''); }
     try {
-        var dbgId_in = PropertiesService.getScriptProperties().getProperty('ANALYTICS_SPREADSHEET_ID');
-        if (dbgId_in) {
-            var dss_in = SpreadsheetApp.openById(dbgId_in);
-            var ds_in = dss_in.getSheetByName('Analytics_Debug');
-            if (!ds_in) ds_in = dss_in.insertSheet('Analytics_Debug');
-            if ((ds_in.getLastRow() || 0) < 1) ds_in.appendRow(['timestamp', 'stage', 'nid', 'rid', 'src', 'eventDetail', 'sig', 'referer', 'decodedUrl']);
-            var ref_in = (params.r || '') || '';
-            ds_in.appendRow([new Date(), 'incoming_redirect', nid, rid, src, eventDetail, (params.sig || ''), ref_in, url]);
-        }
-    } catch (err) { /* ignore debug write errors */ }
+        // Previously wrote debug rows to an analytics spreadsheet (ANALYTICS_SPREADSHEET_ID).
+        // Analytics sheet has been removed/migrated — keep a server-side log instead.
+        var ref_in = (params.r || '') || '';
+        Logger.log('analytics: incoming_redirect nid=%s rid=%s src=%s eventDetail=%s referer=%s url=%s', nid, rid, src, eventDetail, ref_in, url);
+    } catch (err) { /* ignore logging errors */ }
     var sig = (params.sig || '').toString();
     var referer = (params.r || '') || '';
     var allowedOrigin = getWebappOrigin();
@@ -64,31 +59,24 @@ function analyticsRedirect(params) {
     }
     if (!isTargetDomainAllowed(finalUrl)) {
         try {
-            var dbgId = PropertiesService.getScriptProperties().getProperty('ANALYTICS_SPREADSHEET_ID');
-            if (dbgId) {
-                var dss = SpreadsheetApp.openById(dbgId);
-                var ds = dss.getSheetByName('Analytics_Debug');
-                if (!ds) ds = dss.insertSheet('Analytics_Debug');
-                if ((ds.getLastRow() || 0) < 1) ds.appendRow(['timestamp', 'stage', 'nid', 'rid', 'src', 'eventDetail', 'finalUrl', 'referer', 'ua']);
-                var rua = (params.ua || '') || (params['user-agent'] || '');
-                ds.appendRow([new Date(), 'blocked_target', nid, rid, src, eventDetail, finalUrl, referer, rua]);
-            }
+            var rua = (params.ua || '') || (params['user-agent'] || '');
+            Logger.log('analytics: blocked_target nid=%s rid=%s src=%s eventDetail=%s finalUrl=%s referer=%s ua=%s', nid, rid, src, eventDetail, finalUrl, referer, rua);
         } catch (e) { /* ignore */ }
         return HtmlService.createHtmlOutput('<!doctype html><html><head><meta charset="utf-8"><meta name="robots" content="noindex"></head><body></body></html>');
     }
     var target = resolveAnalyticsTarget(nid);
-    var event = { timestamp: new Date(), eventType: 'click', eventDetail: eventDetail || 'click', nid: nid, recipientHash: rid, src: src || (referer && referer.indexOf(allowedOrigin) === 0 ? 'web' : 'unknown'), url: finalUrl, ua: (params.ua || '') || '', referer: referer };
+    var event = { timestamp: new Date(), eventType: 'click', eventDetail: eventDetail || 'click', nid: nid, recipientHash: rid, src: src || (referer && referer.indexOf(allowedOrigin) === 0 ? 'webapp' : 'unknown'), url: finalUrl, ua: (params.ua || '') || '', referer: referer };
+    // Optionally attach server-side user identity (PII). Enable by setting ANALYTICS_LOG_USER=true in Script Properties.
+    try {
+        if (PropertiesService.getScriptProperties().getProperty('ANALYTICS_LOG_USER') === 'true') {
+            try { var ue = Session.getActiveUser && Session.getActiveUser().getEmail ? Session.getActiveUser().getEmail() : ''; if (ue) event.userEmail = ue; } catch (e) { /* ignore */ }
+        }
+    } catch (e) { /* ignore */ }
     sendAnalyticsEvent(event);
     try {
-        var dbgId2 = PropertiesService.getScriptProperties().getProperty('ANALYTICS_SPREADSHEET_ID');
-        if (dbgId2) {
-            var dss2 = SpreadsheetApp.openById(dbgId2);
-            var ds2 = dss2.getSheetByName('Analytics_Debug');
-            if (!ds2) ds2 = dss2.insertSheet('Analytics_Debug');
-            if ((ds2.getLastRow() || 0) < 1) ds2.appendRow(['timestamp', 'stage', 'nid', 'rid', 'src', 'eventDetail', 'finalUrl', 'referer', 'ua']);
-            var rua2 = (params.ua || '') || (params['user-agent'] || '');
-            ds2.appendRow([new Date(), 'logged_redirect', nid, rid, src, eventDetail, finalUrl, referer, rua2]);
-        }
+        // Server-side log for successful redirect handling
+        var rua2 = (params.ua || '') || (params['user-agent'] || '');
+        Logger.log('analytics: logged_redirect nid=%s rid=%s src=%s eventDetail=%s finalUrl=%s referer=%s ua=%s', nid, rid, src, eventDetail, finalUrl, referer, rua2);
     } catch (e) { /* ignore */ }
     function escapeHtmlAttr(s) { try { return (s || '').toString().replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); } catch (e) { return ''; } }
     var safeHtml = '<!doctype html><html><head><meta charset="utf-8"><meta name="robots" content="noindex">' +
@@ -107,7 +95,12 @@ function analyticsPing(params) {
     // Treat eventDetails containing 'open' (e.g. 'open', 'email_open') as an 'open' event
     var edt = (eventDetail || '').toString().toLowerCase();
     var evtType = (edt.indexOf('open') !== -1) ? 'open' : 'page_view';
-    var event = { timestamp: new Date(), eventType: evtType, eventDetail: eventDetail || (evtType === 'page_view' ? 'page_view' : 'open'), nid: nid, recipientHash: rid, src: src || 'web', url: url, ua: (params.ua || '') || '', referer: (params.r || '') || '' };
+    var event = { timestamp: new Date(), eventType: evtType, eventDetail: eventDetail || (evtType === 'page_view' ? 'page_view' : 'open'), nid: nid, recipientHash: rid, src: src || 'webapp', url: url, ua: (params.ua || '') || '', referer: (params.r || '') || '' };
+    try {
+        if (PropertiesService.getScriptProperties().getProperty('ANALYTICS_LOG_USER') === 'true') {
+            try { var ue2 = Session.getActiveUser && Session.getActiveUser().getEmail ? Session.getActiveUser().getEmail() : ''; if (ue2) event.userEmail = ue2; } catch (e) { /* ignore */ }
+        }
+    } catch (e) { /* ignore */ }
     sendAnalyticsEvent(event);
     return HtmlService.createHtmlOutput('');
 }
@@ -130,17 +123,12 @@ function doPost(e) {
 
 function logDebugPost(e) {
     try {
-        var ssId = PropertiesService.getScriptProperties().getProperty('ANALYTICS_SPREADSHEET_ID');
-        if (!ssId) return false;
-        var ss = SpreadsheetApp.openById(ssId);
-        var sheet = ss.getSheetByName('Analytics_Debug');
-        if (!sheet) sheet = ss.insertSheet('Analytics_Debug');
-        if ((sheet.getLastRow() || 0) < 1) sheet.appendRow(['timestamp', 'action', 'rawBody', 'contentType', 'referer']);
+        // Previously wrote raw POST bodies to the Analytics_Debug sheet. Instead log to server logs.
         var raw = '';
         try { raw = e && e.postData && e.postData.contents ? e.postData.contents.toString() : JSON.stringify({}); } catch (e2) { raw = '' + (e && e.postData && e.postData.contents); }
         var ct = (e && e.postData && e.postData.type) || '';
         var ref = (e && e.parameter && e.parameter.r) || (e && e.headers && (e.headers.Referer || e.headers.referer)) || '';
-        sheet.appendRow([new Date(), (e && e.parameter && e.parameter.action) || '', raw, ct, ref]);
+        Logger.log('Analytics POST debug action=%s contentType=%s referer=%s body=%s', (e && e.parameter && e.parameter.action) || '', ct, ref, raw);
         return true;
     } catch (err) { Logger.log('logDebugPost error: ' + (err && err.message)); return false; }
 }
@@ -163,7 +151,8 @@ function logEventApi(body) {
         newsletterId: (body.nid || '').toString(),
         recipientHash: (body.rid || '').toString(),
         url: (body.url || '').toString(),
-        userAgent: (body.ua || '').toString()
+        userAgent: (body.ua || '').toString(),
+        src: (body.src || 'webapp').toString()
     };
     sendAnalyticsEvent(payload);
     return { ok: true };
@@ -176,7 +165,8 @@ function logActiveTimeApi(body) {
             newsletterId: (body.nid || '').toString(),
             recipientHash: (body.rid || '').toString(),
             durationSec: Number(body.seconds || 0),
-            userAgent: (body.ua || '').toString()
+            userAgent: (body.ua || '').toString(),
+            src: (body.src || 'webapp').toString()
         };
         sendAnalyticsEvent(payload);
         return { ok: true };

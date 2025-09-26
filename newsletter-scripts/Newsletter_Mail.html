@@ -51,7 +51,7 @@
                         <? for (var i = 0; i < sec.items.length; i++) { var it = sec.items[i]; ?>
                         <li class="item">
                             <div>
-                                <a class="headline" href="<?= it.link ?>" target="_blank">
+                                <a class="headline" href="<?= it.trackedLink || it.link ?>" target="_blank">
                                     <?= it.headline ?>
                                 </a>
                             </div>
