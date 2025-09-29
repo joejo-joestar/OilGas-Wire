@@ -113,8 +113,8 @@ app.post('/map', async (req, res) => {
     }
 });
 
-// Create a shortlink token for a specific target URL. Tokens are single-use and expire after 60 seconds.
-app.post('/shortlink', (req, res) => {
+// Create a shortlink token for a specific target URL. Tokens are multi-use and optionally expirable.
+app.post('/shortlink', async (req, res) => {
     const body = req.body || {};
     const url = body.url || '';
     const nid = body.nid || '';
@@ -149,9 +149,26 @@ app.post('/shortlink', (req, res) => {
             console.error('Redis shortlink set failed, falling back to memory store', e && e.message);
         }
     }
-    // Fallback to in-memory store
-    shortlinkStore.set(token, { url: url, nid: nid, rid: rid, expiresAt: ttl ? Date.now() + Math.min(Math.max(Number(ttl), 5), 60 * 60) * 1000 : null });
-    return res.json({ ok: true, token: token, path: '/s/' + token, expiresAt: ttl ? new Date(Date.now() + Math.min(Math.max(Number(ttl), 5), 60 * 60) * 1000).toISOString() : null });
+    // If Redis not configured, persist token to BigQuery (durable) as a fallback.
+    try {
+        const expiresAt = ttl ? new Date(Date.now() + Math.min(Math.max(Number(ttl), 5), 60 * 60) * 1000).toISOString() : null;
+        const row = {
+            token: token,
+            url: url,
+            nid: nid || null,
+            rid: rid || null,
+            createdAt: new Date().toISOString(),
+            expiresAt: expiresAt
+        };
+        // Insert into `shortlinks` table
+        await bigquery.dataset(datasetId).table('shortlinks').insert([row]);
+        return res.json({ ok: true, token: token, path: '/s/' + token, expiresAt: expiresAt });
+    } catch (e) {
+        // BigQuery insert failed — fall back to in-memory store
+        console.error('BigQuery shortlink insert failed, falling back to memory store', e && e.message);
+        shortlinkStore.set(token, { url: url, nid: nid, rid: rid, expiresAt: ttl ? Date.now() + Math.min(Math.max(Number(ttl), 5), 60 * 60) * 1000 : null });
+        return res.json({ ok: true, token: token, path: '/s/' + token, expiresAt: ttl ? new Date(Date.now() + Math.min(Math.max(Number(ttl), 5), 60 * 60) * 1000).toISOString() : null });
+    }
 });
 
 // Resolve shortlink: log the click and redirect to the stored URL. Tokens are single-use.
@@ -171,10 +188,28 @@ app.get('/s/:token', async (req, res) => {
         }
     }
     if (!entry) {
-        const mem = shortlinkStore.get(token);
-        if (!mem) return res.status(404).send('Not found');
-        if (mem.expiresAt && mem.expiresAt <= Date.now()) { shortlinkStore.delete(token); return res.status(410).send('Expired'); }
-        entry = mem;
+        // Try BigQuery lookup for persistent tokens
+        try {
+            const sql = `SELECT token, url, nid, rid, createdAt, expiresAt FROM \`${datasetId}.shortlinks\` WHERE token = @token ORDER BY createdAt DESC LIMIT 1`;
+            const options = { query: sql, params: { token: token }, location: 'US' };
+            const [job] = await bigquery.createQueryJob(options);
+            const [rows] = await job.getQueryResults();
+            if (rows && rows.length) {
+                const r = rows[0];
+                if (r.expiresAt && new Date(r.expiresAt) <= new Date()) {
+                    return res.status(410).send('Expired');
+                }
+                entry = { url: r.url, nid: r.nid, rid: r.rid };
+            }
+        } catch (e) {
+            console.error('BigQuery shortlink lookup error', e && e.message);
+        }
+        if (!entry) {
+            const mem = shortlinkStore.get(token);
+            if (!mem) return res.status(404).send('Not found');
+            if (mem.expiresAt && mem.expiresAt <= Date.now()) { shortlinkStore.delete(token); return res.status(410).send('Expired'); }
+            entry = mem;
+        }
     }
 
     // Log click as an event to BigQuery (best-effort)
