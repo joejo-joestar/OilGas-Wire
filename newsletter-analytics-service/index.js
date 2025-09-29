@@ -139,9 +139,9 @@ app.get('/s/:token', async (req, res) => {
     // Log click as an event to BigQuery (best-effort)
     const row = {
         eventTimestamp: new Date().toISOString(),
-        src: 'shortlink',
+        src: 'mail',
         eventType: 'click',
-        eventDetail: 'shortlink_click',
+        eventDetail: 'mail_headline_click',
         newsletterId: entry.nid || null,
         recipientHash: entry.rid || null,
         url: entry.url || null,
