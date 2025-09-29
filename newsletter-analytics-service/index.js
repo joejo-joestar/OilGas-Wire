@@ -14,21 +14,23 @@ const bigquery = new BigQuery();
 const datasetId = 'newsletter_analytics';
 const tableId = 'events';
 
-// Simple in-memory token store for shortlinks. Keys are tokens -> { url, nid, rid, expiresAt, used }
+// Simple in-memory token store for shortlinks. Keys are tokens -> { url, nid, rid, expiresAt }
 // Note: This is ephemeral and only suitable for single-instance deployments or testing.
+// Tokens are now multi-use and non-expiring by default unless a TTL is explicitly desired.
 const shortlinkStore = new Map();
 
 function generateToken(len = 8) {
     return crypto.randomBytes(len).toString('hex');
 }
 
-// Cleanup expired tokens periodically
+// Cleanup expired tokens periodically — only removes tokens that have an explicit expiresAt set
+// (we now default to non-expiring tokens, so this usually does nothing).
 setInterval(() => {
     const now = Date.now();
     for (const [k, v] of shortlinkStore.entries()) {
-        if (v.expiresAt <= now || v.used) shortlinkStore.delete(k);
+        if (v && v.expiresAt && v.expiresAt <= now) shortlinkStore.delete(k);
     }
-}, 30 * 1000);
+}, 60 * 1000);
 
 app.post('/track', async (req, res) => {
     const event = req.body;
@@ -117,24 +119,63 @@ app.post('/shortlink', (req, res) => {
     const url = body.url || '';
     const nid = body.nid || '';
     const rid = body.rid || '';
-    const ttl = Number(body.ttlSeconds) || 60;
+    // Tokens are multi-use and non-expiring by default. If ttlSeconds is provided
+    // we will honor it, but by default tokens do not expire.
+    const ttl = (typeof body.ttlSeconds !== 'undefined') ? Number(body.ttlSeconds) : null;
     if (!url) return res.status(400).json({ ok: false, error: 'url required' });
     const token = generateToken(6); // 12 hex chars
-    const expiresAt = Date.now() + Math.min(Math.max(ttl, 5), 60 * 60) * 1000; // clamp
-    shortlinkStore.set(token, { url: url, nid: nid, rid: rid, expiresAt: expiresAt, used: false });
-    return res.json({ ok: true, token: token, path: '/s/' + token, expiresAt: new Date(expiresAt).toISOString() });
+    const payload = JSON.stringify({ url: url, nid: nid, rid: rid });
+    // If REDIS_URL is provided, store in Redis with EX expiry
+    const REDIS_URL = process.env.REDIS_URL || '';
+    if (REDIS_URL) {
+        // lazy-load redis client
+        try {
+            if (!global.redisClient) {
+                const { createClient } = require('redis');
+                const client = createClient({ url: REDIS_URL });
+                client.on('error', (err) => console.error('Redis error', err));
+                client.connect().catch((e) => console.error('Redis connect error', e));
+                global.redisClient = client;
+            }
+            // SET token -> payload. If TTL requested, set EX; otherwise leave persistent.
+            if (ttl && !isNaN(ttl) && Number(ttl) > 0) {
+                const clamped = Math.min(Math.max(Number(ttl), 5), 60 * 60);
+                global.redisClient.set('shortlink:' + token, payload, { EX: clamped }).catch((e) => console.error('Redis set error', e));
+            } else {
+                global.redisClient.set('shortlink:' + token, payload).catch((e) => console.error('Redis set error', e));
+            }
+            return res.json({ ok: true, token: token, path: '/s/' + token, expiresAt: ttl ? new Date(Date.now() + Math.min(Math.max(Number(ttl), 5), 60 * 60) * 1000).toISOString() : null });
+        } catch (e) {
+            console.error('Redis shortlink set failed, falling back to memory store', e && e.message);
+        }
+    }
+    // Fallback to in-memory store
+    shortlinkStore.set(token, { url: url, nid: nid, rid: rid, expiresAt: ttl ? Date.now() + Math.min(Math.max(Number(ttl), 5), 60 * 60) * 1000 : null });
+    return res.json({ ok: true, token: token, path: '/s/' + token, expiresAt: ttl ? new Date(Date.now() + Math.min(Math.max(Number(ttl), 5), 60 * 60) * 1000).toISOString() : null });
 });
 
 // Resolve shortlink: log the click and redirect to the stored URL. Tokens are single-use.
 app.get('/s/:token', async (req, res) => {
     const token = (req.params && req.params.token) || '';
-    const entry = shortlinkStore.get(token);
-    if (!entry) return res.status(404).send('Not found');
-    if (entry.used) { shortlinkStore.delete(token); return res.status(410).send('Gone'); }
-    if (entry.expiresAt <= Date.now()) { shortlinkStore.delete(token); return res.status(410).send('Expired'); }
-
-    // Mark used (single-use)
-    entry.used = true; shortlinkStore.set(token, entry);
+    const REDIS_URL = process.env.REDIS_URL || '';
+    let entry = null;
+    if (REDIS_URL && global.redisClient) {
+        try {
+            const key = 'shortlink:' + token;
+            const val = await global.redisClient.get(key);
+            if (!val) return res.status(404).send('Not found');
+            try { entry = JSON.parse(val); } catch (e) { entry = null; }
+        } catch (e) {
+            console.error('Redis shortlink consume error', e && e.message);
+            // fall back to memory below
+        }
+    }
+    if (!entry) {
+        const mem = shortlinkStore.get(token);
+        if (!mem) return res.status(404).send('Not found');
+        if (mem.expiresAt && mem.expiresAt <= Date.now()) { shortlinkStore.delete(token); return res.status(410).send('Expired'); }
+        entry = mem;
+    }
 
     // Log click as an event to BigQuery (best-effort)
     const row = {

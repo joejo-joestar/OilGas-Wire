@@ -70,14 +70,16 @@ This service collects and stores analytics events for newsletters, such as email
 
 ## API Endpoints
 
-### Shortlink support (single-use tokens)
+### Shortlink support (multi-use, optionally expirable tokens)
 
-This service also provides a shortlink API to create short-lived, single-use tokens that map to a final target URL. Use this when you want to ensure the analytics service receives the click before redirecting to a third-party site (useful for redirectors that strip query params).
+This service provides a shortlink API to create tokens that map to a final target URL. The shortlink lets the analytics service receive and record a click before redirecting to the destination — useful when third-party redirectors strip query parameters.
 
-- POST /shortlink: create a token. Request body: `{ url, nid, rid, ttlSeconds }`. The service returns `{ ok: true, token, path, expiresAt }`.
-- GET /s/:token: resolve a token, log a shortlink_click event, and issue an HTTP 302 redirect to the stored URL. Tokens are single-use and expire after the requested TTL (clamped to a maximum).
+- POST /shortlink: create a token. Request body: `{ url, nid, rid, ttlSeconds? }`. The `ttlSeconds` field is optional; if omitted the token is persistent (non-expiring). The service returns `{ ok: true, token, path, expiresAt }` where `expiresAt` will be `null` for non-expiring tokens.
+- GET /s/:token: resolve a token, log a `shortlink_click` event, and issue an HTTP 302 redirect to the stored URL. Tokens are multi-use by default; if a TTL was supplied when creating the token it will expire after that time.
 
 Notes:
 
-- The current implementation uses an in-memory token store (suitable for single-instance testing). For production or multi-instance deployments, use a persistent store like Redis to share tokens between instances and ensure tokens survive service restarts.
-- Default token lifetime used by Apps Script is 60 seconds and tokens are created as single-use by default.
+- The current implementation supports two storage backends:
+  - In-memory Map (default): simple and suited for local testing or single-instance deployments. Non-expiring tokens stored here are lost on process restart.
+  - Redis (recommended for production): when `REDIS_URL` is provided, tokens are stored in Redis and shared across instances. Redis-backed tokens persist until explicitly expired by TTL (if set) or deleted.
+- By default the Apps Script client does not request a TTL so tokens are persistent and multi-use. If you need single-use tokens or short-lived tokens, set `ttlSeconds` in the `POST /shortlink` request when creating the token.

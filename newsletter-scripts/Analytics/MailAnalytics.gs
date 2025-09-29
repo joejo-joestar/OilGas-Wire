@@ -13,7 +13,7 @@ function buildAnalyticsRedirectUrl(baseUrl, nid, rid, src, eventDetail, useShort
     if (useShortlink) {
         try {
             if (ANALYTICS_ENDPOINT) {
-                var payload = { url: baseUrl || '', nid: nid || '', rid: rid || '', ttlSeconds: 60 };
+                var payload = { url: baseUrl || '', nid: nid || '', rid: rid || '' };
                 var options = { method: 'post', contentType: 'application/json', payload: JSON.stringify(payload), muteHttpExceptions: true };
                 try {
                     var resp = UrlFetchApp.fetch(ANALYTICS_ENDPOINT.replace(/\/+$/, '') + '/shortlink', options);
