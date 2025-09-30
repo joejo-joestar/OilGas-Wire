@@ -81,7 +81,7 @@ This service collects and stores analytics events for newsletters, such as email
 
 ### `/track` endpoint
 
-A simple endpoint to log the analytics
+A simple endpoint to log the analytics event to BigQuery.
 
 **Method**: `POST`
 
@@ -104,6 +104,8 @@ A simple endpoint to log the analytics
 ---
 
 ### `/map` endpoint
+
+Log a mapping of `recipientHash` to `email` for looker studio user-friendly reporting.
 
 **Method**: `POST`
 
