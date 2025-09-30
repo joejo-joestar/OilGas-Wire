@@ -27,9 +27,9 @@ function logSheetClickApi(body) {
         var url = (body.url || '').toString();
         var ua = (body.ua || '').toString();
         var referer = (body.referer || '').toString();
-        var target = resolveAnalyticsTarget(nid);
+        // Forward to central analytics endpoint if configured. This avoids writing to a spreadsheet.
         var evt = { timestamp: new Date(), eventType: 'click', eventDetail: 'sheet_headline_click', nid: nid, recipientHash: rid, src: 'sheet', url: url, ua: ua, referer: referer };
-        logAnalyticsEvent(target.spreadsheetId, evt);
+        try { sendAnalyticsEvent(evt); } catch (e) { Logger.log('sendAnalyticsEvent error: ' + (e && e.message)); }
         return { ok: true };
     } catch (e) { return { ok: false, error: e && e.message }; }
 }
@@ -40,7 +40,6 @@ function logSheetActiveTimeApi(body) {
         var nid = (body.nid || '').toString();
         var rid = (body.rid || '').toString();
         var secs = Number(body.secondsActive || body.seconds || 0) || 0;
-        var target = resolveAnalyticsTarget(nid);
         var evt = {
             timestamp: new Date(),
             eventType: 'active_time',
@@ -53,7 +52,7 @@ function logSheetActiveTimeApi(body) {
             referer: (body.referer || '') || '',
             extra: { seconds: secs }
         };
-        logAnalyticsEvent(target.spreadsheetId, evt);
+        try { sendAnalyticsEvent(evt); } catch (e) { Logger.log('sendAnalyticsEvent error: ' + (e && e.message)); }
         return { ok: true };
     } catch (e) { return { ok: false, error: e && e.message }; }
 }

@@ -146,6 +146,32 @@ function analyzeItem(item) {
     var p = text.match(priceRegex);
     if (p) res.priceinfo = p[0].trim();
 
+    // --- Normalize field names expected by sheet builder / other code ---
+    // SheetUtils and other consumers expect camelCase names like priceInfo,
+    // dealValue, dealValueNumeric, dealValueCurrency, dealValueRaw, dealType.
+    try {
+        // Company
+        if (!res.company && res.companies) res.company = res.companies;
+        // dealType
+        if (res.dealtype && !res.dealType) res.dealType = res.dealtype;
+        // dealValue raw token: prefer any explicitly-detected dealvalue, else priceinfo
+        res.dealValue = res.dealvalue || res.dealValue || '';
+        if (!res.dealValue && res.priceinfo) res.dealValue = res.priceinfo;
+        // Expose raw and numeric forms
+        if (res.dealValue) {
+            res.dealValueRaw = res.dealValue;
+            try {
+                var parsed = parseMonetaryValue(res.dealValue);
+                if (parsed && typeof parsed.amount === 'number') res.dealValueNumeric = parsed.amount;
+                if (parsed && parsed.currency) res.dealValueCurrency = parsed.currency;
+            } catch (e) { /* ignore parsing errors */ }
+        }
+        // priceInfo camelCase
+        if (res.priceinfo && !res.priceInfo) res.priceInfo = res.priceinfo;
+    } catch (e) {
+        // non-fatal normalization errors should not block analysis
+    }
+
     return res;
 }
 

@@ -20,7 +20,7 @@
                                 alt="Logo">
                         </td>
                         <td class="title-cell">
-                            <h1>Business Excellence Newsletter</h1>
+                            <h1>Oil and Gas Newsletter</h1>
                         </td>
                         <td class="date-cell">
                             <p>
@@ -51,7 +51,7 @@
                         <? for (var i = 0; i < sec.items.length; i++) { var it = sec.items[i]; ?>
                         <li class="item">
                             <div>
-                                <a class="headline" href="<?= it.link ?>" target="_blank">
+                                <a class="headline" href="<?= it.trackedLink || it.link ?>" target="_blank">
                                     <?= it.headline ?>
                                 </a>
                             </div>

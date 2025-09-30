@@ -85,6 +85,9 @@ function renderNewsletterWebHtml(data) {
     tpl.nid = data.nid || '';
     // provide deployed webapp URL to the template so client JS can call the JSON API reliably
     try { tpl.webappUrl = data.webappUrl || PropertiesService.getScriptProperties().getProperty('WEBAPP_URL') || ''; } catch (e) { tpl.webappUrl = data.webappUrl || ''; }
+    // Optionally expose a validated RID to the client-side template. This should be provided by doGet
+    // only when the incoming request included a valid signature and rid.
+    try { tpl.RID = data.rid || ''; } catch (e) { tpl.RID = ''; }
     // evaluate() returns an HtmlOutput; getContent() returns a string.
     // Return the HTML string here. The caller (doGet) will wrap it into an HtmlOutput
     // and can call setTitle() there.
@@ -295,6 +298,7 @@ function doGet(e) {
     // If the webapp was opened via a signed CTA link from email, verify the signature
     // and log a mail_web_click event server-side. Expected query params appended by
     // the mailer: rid=<hex>, src=<source>, eventDetail=<detail>, sig=<hmac>
+    var verifiedRid = '';
     try {
         if (e && e.parameter && e.parameter.rid && e.parameter.sig) {
             try {
@@ -303,14 +307,25 @@ function doGet(e) {
                 var src_q = (q.src || 'mail').toString();
                 var eventDetail_q = (q.eventDetail || q.detail || 'mail_web_click').toString();
                 var nid_q = (q.nid || '') || '';
-                // Reconstruct the target URL that the mailer signed: WEBAPP_URL with ?date=...
+                // Reconstruct the target URL that the mailer signed.
+                // Prefer an explicit `signed_target` param (base64 encoded) if present
+                // — analyticsRedirect forwards that to preserve the originally-signed URL.
                 var fullUrl = '';
                 try {
-                    var base = (PropertiesService.getScriptProperties().getProperty('WEBAPP_URL') || '').toString();
-                    if (base) {
-                        var datep = (e.parameter.date || '');
-                        var sep = base.indexOf('?') === -1 ? '?' : '&';
-                        fullUrl = base + (datep ? (sep + 'date=' + encodeURIComponent(datep)) : '');
+                    if (e && e.parameter && e.parameter.signed_target) {
+                        try {
+                            fullUrl = Utilities.newBlob(Utilities.base64Decode(decodeURIComponent(e.parameter.signed_target))).getDataAsString();
+                        } catch (ie) { fullUrl = decodeURIComponent(e.parameter.signed_target || ''); }
+                    }
+                } catch (errSigned) { fullUrl = ''; }
+                try {
+                    if (!fullUrl) {
+                        var base = (PropertiesService.getScriptProperties().getProperty('WEBAPP_URL') || '').toString();
+                        if (base) {
+                            var datep = (e.parameter.date || '');
+                            var sep = base.indexOf('?') === -1 ? '?' : '&';
+                            fullUrl = base + (datep ? (sep + 'date=' + encodeURIComponent(datep)) : '');
+                        }
                     }
                 } catch (ee) { fullUrl = ''; }
                 var sigBase = (nid_q || '') + '|' + (rid_q || '') + '|' + (fullUrl || '') + '|' + (src_q || '') + '|' + (eventDetail_q || '');
@@ -320,7 +335,9 @@ function doGet(e) {
                     try {
                         var target = resolveAnalyticsTarget(nid_q);
                         var evt = { timestamp: new Date(), eventType: 'click', eventDetail: eventDetail_q || 'mail_web_click', nid: nid_q || '', recipientHash: rid_q, src: src_q || 'mail', url: fullUrl || '', ua: (e && e.headers && (e.headers['User-Agent'] || e.headers['user-agent'])) || '', referer: (e && e.parameter && e.parameter.r) || '' };
-                        logAnalyticsEvent(target.spreadsheetId, evt);
+                        try { sendAnalyticsEvent(evt); } catch (se) { Logger.log('sendAnalyticsEvent error: ' + (se && se.message)); }
+                        // expose the validated rid to the template so client JS can use it for subsequent events
+                        verifiedRid = rid_q || '';
                     } catch (le) { /* ignore logging errors */ }
                 }
             } catch (err) { /* ignore verification errors */ }
@@ -337,8 +354,9 @@ function doGet(e) {
     var sheetId = getSheetId();
     var feedSheetUrl = 'https://docs.google.com/spreadsheets/d/' + sheetId + '/';
     var nid = 'newsletter-' + Utilities.formatDate(new Date(targetDate), Session.getScriptTimeZone() || 'UTC', 'yyyy-MM-dd');
-    var html = renderNewsletterWebHtml({ sections: sections, dateRangeText: drText, feedSheetUrl: feedSheetUrl, nid: nid });
-    return HtmlService.createHtmlOutput(html).setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL).setTitle('Business Excellence Newsletter');
+    try { Logger.log('doGet: rendering web page with verifiedRid=%s', verifiedRid); } catch (e) { }
+    var html = renderNewsletterWebHtml({ sections: sections, dateRangeText: drText, feedSheetUrl: feedSheetUrl, nid: nid, rid: verifiedRid });
+    return HtmlService.createHtmlOutput(html).setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL).setTitle('Oil and Gas Newsletter');
 }
 
 /**
@@ -431,7 +449,9 @@ function sendDailyNewsletter() {
             });
         });
 
-        var perFullNewsletterUrl = fullNewsletterUrl ? buildAnalyticsRedirectUrl(fullNewsletterUrl, nid, rid, 'mail', 'mail_web_click') : '';
+        // For the full-newsletter CTA, preserve the old webapp CTA logic so the web
+        // newsletter receives a verified `rid`. Do not use shortlink for this one.
+        var perFullNewsletterUrl = fullNewsletterUrl ? buildAnalyticsRedirectUrl(fullNewsletterUrl, nid, rid, 'mail', 'mail_web_click', false) : '';
         var perFeedSheetUrl = buildAnalyticsRedirectUrl(feedSheetUrl, nid, rid, 'mail', 'mail_sheet_click');
         var perPixel = buildAnalyticsPixelUrl(nid, rid, 'mail', 'email_open');
 
@@ -443,10 +463,18 @@ function sendDailyNewsletter() {
         }) + '<img src="' + perPixel + '" width="1" height="1" alt="">';
 
         try {
-            MailApp.sendEmail({ to: recipient, subject: 'Business Excellence Newsletter - ' + drText, htmlBody: perHtml, body: bodyPlain, name: 'Business Excellence Newsletter' });
+            MailApp.sendEmail({ to: recipient, subject: 'Oil and Gas Newsletter - ' + drText, htmlBody: perHtml, body: bodyPlain, name: 'Oil and Gas Newsletter' });
             Logger.log('Successfully sent newsletter to %s', recipient);
-            var analyticsTarget = resolveAnalyticsTarget(nid);
-            recordRecipientHash(analyticsTarget.spreadsheetId, rid, recipient);
+            try {
+                // Optionally send recipientHash -> email mapping to analytics backend.
+                // Controlled by ANALYTICS_SEND_MAPPINGS script property. Default: disabled.
+                var sendMappings = (PropertiesService.getScriptProperties().getProperty('ANALYTICS_SEND_MAPPINGS') || '') === 'true';
+                if (sendMappings) {
+                    storeRecipientMapping(rid, recipient, nid);
+                }
+            } catch (e) {
+                Logger.log('Failed to store recipient mapping: ' + (e && e.message));
+            }
         } catch (e) {
             Logger.log('Failed to send newsletter to %s. Error: %s', recipient, e.message);
         }

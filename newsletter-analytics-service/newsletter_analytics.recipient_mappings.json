@@ -1,0 +1,22 @@
+[
+    {
+        "name": "mappedAt",
+        "type": "TIMESTAMP"
+    },
+    {
+        "name": "recipientHash",
+        "type": "STRING"
+    },
+    {
+        "name": "email",
+        "type": "STRING"
+    },
+    {
+        "name": "emailHash",
+        "type": "STRING"
+    },
+    {
+        "name": "newsletterId",
+        "type": "STRING"
+    }
+]

@@ -1,0 +1,26 @@
+[
+    {
+        "name": "token",
+        "type": "STRING"
+    },
+    {
+        "name": "url",
+        "type": "STRING"
+    },
+    {
+        "name": "nid",
+        "type": "STRING"
+    },
+    {
+        "name": "rid",
+        "type": "STRING"
+    },
+    {
+        "name": "createdAt",
+        "type": "TIMESTAMP"
+    },
+    {
+        "name": "expiresAt",
+        "type": "TIMESTAMP"
+    }
+]
