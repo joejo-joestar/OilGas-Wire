@@ -89,15 +89,15 @@ A simple endpoint to log the analytics
 
 ```json
 {
-    eventTimestamp: string;
-    src: string;
-    eventType: string;
-    eventDetail: string;
-    newsletterId: string;
-    recipientHash: string;
-    url: string;
-    durationSec: number;
-    userAgent: string | null;
+    eventTimestamp: string,
+    src: string,
+    eventType: string,
+    eventDetail: string,
+    newsletterId: string,
+    recipientHash: string,
+    url: string,
+    durationSec: number,
+    userAgent: string | null
 }
 ```
 
@@ -111,11 +111,11 @@ A simple endpoint to log the analytics
 
 ```json
 {
-    mappedAt: string;
-    recipientHash: string;
-    email: string;
-    emailHash: string;
-    newsletterId: string;
+    mappedAt: string,
+    recipientHash: string,
+    email: string,
+    emailHash: string,
+    newsletterId: string
 }
 ```
 
@@ -131,10 +131,10 @@ This service provides a shortlink API to create tokens that map to a final targe
 
 ```json
 {
-    url: string;
-    nid: string;
-    rid: string;
-    ttlSeconds?: number | null;
+    url: string,
+    nid: string,
+    rid: string,
+    ttlSeconds?: number | null
 }
 ```
 
