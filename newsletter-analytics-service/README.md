@@ -71,7 +71,7 @@ This service collects and stores analytics events for newsletters, such as email
 ## API Endpoints
 
 | Endpoints    | Method | Body / Params               | Description                                                        |
-| ------------ | ------ | --------------------------- | ------------------------------------------------------------------ |
+| :----------- | :----- | :-------------------------- | :----------------------------------------------------------------- |
 | `/track`     | `POST` | [Body](#track-endpoint)     | Log analytics events.                                              |
 | `/map`       | `POST` | [Body](#map-endpoint)       | Log `recipientHash` to `email` map (for looker studio ux).         |
 | `/shortlink` | `POST` | [Body](#shortlink-endpoint) | Create a shortlink token that maps to a target URL.                |
