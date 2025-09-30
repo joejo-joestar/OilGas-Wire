@@ -44,7 +44,7 @@ This service collects and stores analytics events for newsletters, such as email
     Use the provided `curl` command in the cloud console to test the endpoint. Make sure to replace the URL with your deployed service URL.
 
     ```bash
-    curl -X POST "<SERVICE_URL>/track" -H "Authorization: bearer $(gcloud auth print-identity-token)" -H "Content-Type: application/json" -d '{  "src":"cloud-console", "eventType": "test-event", "eventDetail": "console-test", "durationSec": "25", "newsletterId": "test-from-console", "url": "https://www.oilandgas360.com/exxon-signs-initial-agreement-with-rosneft-to-chart-possible-path-to-recoup-russian-losses-sources-say/#utm_source=rss&utm_medium=rss&utm_campaign=exxon-signs-initial-agreement-with-rosneft-to-chart-possible-path-to-recoup-russian-losses-sources-say" }''
+    curl -X POST "<SERVICE_URL>/track" -H "Content-Type: application/json" -d '{  "src":"cloud-console", "eventType": "test-event", "eventDetail": "console-test", "durationSec": "25", "newsletterId": "test-from-console", "url": "https://www.oilandgas360.com/exxon-signs-initial-agreement-with-rosneft-to-chart-possible-path-to-recoup-russian-losses-sources-say/#utm_source=rss&utm_medium=rss&utm_campaign=exxon-signs-initial-agreement-with-rosneft-to-chart-possible-path-to-recoup-russian-losses-sources-say" }''
     ```
 
     This command sends a test event with the following fields:
