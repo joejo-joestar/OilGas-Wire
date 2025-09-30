@@ -97,7 +97,7 @@ A simple endpoint to log the analytics
     "recipientHash": "string",
     "url": "string",
     "durationSec": "number",
-    "userAgent": "string" | null
+    "userAgent": "string | null"
 }
 ```
 
@@ -134,7 +134,7 @@ This service provides a shortlink API to create tokens that map to a final targe
     "url": "string",
     "nid": "string",
     "rid": "string",
-    "ttlSeconds"?: "number" | null
+    "ttlSeconds": "number | null"
 }
 ```
 
