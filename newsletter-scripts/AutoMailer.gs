@@ -356,7 +356,7 @@ function doGet(e) {
     var nid = 'newsletter-' + Utilities.formatDate(new Date(targetDate), Session.getScriptTimeZone() || 'UTC', 'yyyy-MM-dd');
     try { Logger.log('doGet: rendering web page with verifiedRid=%s', verifiedRid); } catch (e) { }
     var html = renderNewsletterWebHtml({ sections: sections, dateRangeText: drText, feedSheetUrl: feedSheetUrl, nid: nid, rid: verifiedRid });
-    return HtmlService.createHtmlOutput(html).setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL).setTitle('Oil and Gas Newsletter');
+    return HtmlService.createHtmlOutput(html).setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL).setTitle('O&G Market Newsletter');
 }
 
 /**
@@ -463,7 +463,7 @@ function sendDailyNewsletter() {
         }) + '<img src="' + perPixel + '" width="1" height="1" alt="">';
 
         try {
-            MailApp.sendEmail({ to: recipient, subject: 'Oil and Gas Newsletter - ' + drText, htmlBody: perHtml, body: bodyPlain, name: 'Oil and Gas Newsletter' });
+            MailApp.sendEmail({ to: recipient, subject: 'O&G Market Newsletter - ' + drText, htmlBody: perHtml, body: bodyPlain, name: 'O&G Market Newsletter' });
             Logger.log('Successfully sent newsletter to %s', recipient);
             try {
                 // Optionally send recipientHash -> email mapping to analytics backend.

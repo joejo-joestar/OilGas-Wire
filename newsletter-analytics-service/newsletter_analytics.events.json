@@ -2,46 +2,55 @@
     {
         "name": "eventTimestamp",
         "type": "TIMESTAMP",
-        "description": "metric recorded time"
+        "mode": "NULLABLE",
+        "description": "Timestamp indicating when the event was recorded."
     },
     {
         "name": "src",
         "type": "STRING",
-        "description": "source of metric recorded"
+        "mode": "NULLABLE",
+        "description": "Source from which the event metric was recorded."
     },
     {
         "name": "eventType",
         "type": "STRING",
-        "description": "type of event"
+        "mode": "NULLABLE",
+        "description": "Type of event that was recorded."
     },
     {
         "name": "eventDetail",
         "type": "STRING",
-        "description": "event details"
+        "mode": "NULLABLE",
+        "description": "Specific details associated with the recorded event."
     },
     {
         "name": "newsletterId",
         "type": "STRING",
-        "description": "id of newsletter (if webapp)"
+        "mode": "NULLABLE",
+        "description": "Identifier of the newsletter, typically for web application contexts."
     },
     {
         "name": "recipientHash",
         "type": "STRING",
-        "description": "hash string of the recipient (for mail)"
+        "mode": "NULLABLE",
+        "description": "Hash string representing the recipient of the newsletter."
     },
     {
         "name": "url",
         "type": "STRING",
-        "description": "link of headline (if click)"
+        "mode": "NULLABLE",
+        "description": "Link associated with a headline within the newsletter, if clicked."
     },
     {
         "name": "durationSec",
         "type": "INTEGER",
-        "description": "time spent on webapp"
+        "mode": "NULLABLE",
+        "description": "Duration of time spent on the web application, measured in seconds."
     },
     {
         "name": "userAgent",
         "type": "STRING",
-        "description": "browser details of viewer"
+        "mode": "NULLABLE",
+        "description": "Browser details of the user who viewed the newsletter content."
     }
 ]

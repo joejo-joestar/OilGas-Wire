@@ -99,7 +99,7 @@ function analyticsRedirect(params) {
                 var nid_local = 'newsletter-' + Utilities.formatDate(new Date(targetDate), Session.getScriptTimeZone() || 'UTC', 'yyyy-MM-dd');
                 // Render the web template and inject the verified recipientHash (rid)
                 var html = renderNewsletterWebHtml({ sections: sections, dateRangeText: drText, feedSheetUrl: feedSheetUrl, nid: nid_local, rid: rid });
-                return HtmlService.createHtmlOutput(html).setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL).setTitle('Oil and Gas Newsletter');
+                return HtmlService.createHtmlOutput(html).setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL).setTitle('Oil & Gas Market Newsletter');
             } catch (e) { /* fall back to redirect meta tag below on any render error */ }
         }
     } catch (e) { /* ignore rendering errors and fall back to redirect */ }
