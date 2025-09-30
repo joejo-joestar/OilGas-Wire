@@ -31,18 +31,19 @@ Automatic newsletter generator and RSS/Atom aggregator built on Google Apps Scri
 
 Key properties (set in Project Settings → Script properties):
 
-| Property                   | Description                                                                                                                   | Required / Notes                           |
-| -------------------------- | ----------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------ |
-| `SHEET_ID`                 | ID of the Google Sheet that stores feed tabs and feed data                                                                    | Required                                   |
-| `ANALYTICS_SPREADSHEET_ID` | (Deprecated) Spreadsheet ID where analytics events are logged (Analytics_Events, Analytics_Daily). Prefer `ANALYTICS_ENDPOINT`. | Optional - deprecated                       |
-| `ANALYTICS_ENDPOINT`       | URL of an analytics endpoint that accepts POST /track JSON events (recommended). Example: a deployed `newsletter-analytics-service` | Recommended (for robust tracking)          |
-| `ANALYTICS_LOG_USER`       | When set to `true`, the webapp will attach the server-side active user's email (Session.getActiveUser().getEmail()) to events sent to `ANALYTICS_ENDPOINT`. Use with care (PII). | Optional (default: false) |
-| `ANALYTICS_SECRET`         | Some secret string ([base64](https://www.base64encode.org/)) to perform very basic [HMAC](https://en.wikipedia.org/wiki/HMAC) | Recommended (for tracking)                 |
-| `ANALYTICS_SEND_MAPPINGS`  | When set to `true`, the mailer will POST incremental rid->email mappings to the analytics backend during sends. Default: `false`. | Optional (default: false) |
-| `SEND_TO`                  | Comma-separated list of recipient emails for the newsletter                                                                   | Required unless `TEST_RECIPIENT` is set    |
-| `TEST_RECIPIENT`           | Sends newsletter only to this address (overrides `SEND_TO`), useful for testing                                               | Optional (use for safe testing)            |
-| `WEBAPP_URL`               | Deployed Web App URL used for the web preview and analytics POST fallback                                                     | Optional (set to enable web preview links) |
-| `MAX_ITEMS_PER_SECTION`    | How many items to show in each section in the email preview (default: 6)                                                      | Optional (default: 6)                      |
+| Property                     | Description                                                                                                                                                                      | Required / Notes                           |
+| ---------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------ |
+| `SHEET_ID`                   | ID of the Google Sheet that stores feed tabs and feed data                                                                                                                       | Required                                   |
+| `ANALYTICS_SPREADSHEET_ID`   | (Deprecated) Spreadsheet ID where analytics events are logged (Analytics_Events, Analytics_Daily). Prefer `ANALYTICS_ENDPOINT`.                                                  | Optional - deprecated                      |
+| `ANALYTICS_ENDPOINT`         | URL of an analytics endpoint that accepts `POST` `/track` JSON events (recommended). Example: a deployed `newsletter-analytics-service`                                          | Recommended (for robust tracking)          |
+| `ANALYTICS_LOG_USER`         | When set to `true`, the webapp will attach the server-side active user's email (Session.getActiveUser().getEmail()) to events sent to `ANALYTICS_ENDPOINT`. Use with care (PII). | Optional (default: false)                  |
+| `ANALYTICS_SECRET`           | Some secret string ([base64](https://www.base64encode.org/)) to perform very basic [HMAC](https://en.wikipedia.org/wiki/HMAC)                                                    | Recommended (for tracking)                 |
+| `ANALYTICS_SEND_MAPPINGS`    | When set to `true`, the mailer will `POST` incremental rid->email mappings to the analytics backend during sends.                                                                | Optional (default: false)                  |
+| `ANALYTICS_SEND_PLAIN_EMAIL` | When set to `true`, the mailer will `POST` incremental rid->email mappings **in plaintext** to the analytics backend during sends.                                               | Optional (default: false)                  |
+| `SEND_TO`                    | Comma-separated list of recipient emails for the newsletter                                                                                                                      | Required unless `TEST_RECIPIENT` is set    |
+| `TEST_RECIPIENT`             | Sends newsletter only to this address (overrides `SEND_TO`), useful for testing                                                                                                  | Optional (use for safe testing)            |
+| `WEBAPP_URL`                 | Deployed Web App URL used for the web preview and analytics `POST` fallback                                                                                                      | Optional (set to enable web preview links) |
+| `MAX_ITEMS_PER_SECTION`      | How many items to show in each section in the email preview (default: 6)                                                                                                         | Optional (default: 6)                      |
 
 If `WEBAPP_URL` is set, outgoing emails include a "View full newsletter" link that points to the web preview.
 
@@ -66,25 +67,7 @@ This project includes lightweight analytics for clicks, page views and active ti
 - `WebAnalytics.gs` exposes a `doPost(e)` JSON API that accepts `logEvent` and `logActiveTime` actions and forwards them to `logEventApi` / `logActiveTimeApi`.
 - `SharedAnalytics.gs` provides `sendAnalyticsEvent()` which POSTs a normalized JSON payload to `ANALYTICS_ENDPOINT` when configured. This is the recommended way to collect analytics. If `ANALYTICS_ENDPOINT` is not set the function logs an error and is a no-op.
 
-### Recommended: Backend-owned recipient mapping (rid -> email)
-
-For privacy and reliability we recommend keeping the authoritative mapping of `rid` (recipientHash) -> `email` in your analytics backend (BigQuery `recipient_mappings` table). That lets the Apps Script side send only `recipientHash` in events while your backend joins events to identities when necessary.
-
-- Workflow:
-
-- Bulk import your existing sheet's mapping into BigQuery (or load directly from Google Sheets into BigQuery). See `newsletter-analytics-service/ddl_recipient_mappings.sql` for the table layout.
-
-- Keep `ANALYTICS_SEND_MAPPINGS` disabled (default). If you want incremental updates during sends, set `ANALYTICS_SEND_MAPPINGS=true` to allow the mailer to POST mappings to the backend.
-This keeps PII out of the event stream by default and lets you manage mappings in a central, auditable place.
-
-<p align="center">
-<img src="assets/analytics_sheet.png" alt="Analytics Sheets" title="Analytics Sheets" width="600" >
-</p>
-
-- `Newsletter_Web.html` now includes a `trackClick(payload)` helper that:
-
-  - Uses `google.script.run` when served by HtmlService, or
-  - Uses `navigator.sendBeacon` to POST JSON to `WEBAPP_URL`, falling back to `fetch()` if needed.
+More details on the backend service can be found in [`newsletter-analytics-service`](newsletter-analytics-service/README.md).
 
 > [!WARNING]
 > The mail analytics and sheet analytics are not fully implemented due to limitations with email clients and GAS. The mail analytics code is present in `MailAnalytics.gs` but do not work reliably.
@@ -92,9 +75,11 @@ This keeps PII out of the event stream by default and lets you manage mappings i
 <br/>
 
 > [!NOTE]
-> Prefer setting `ANALYTICS_ENDPOINT` to an HTTP(S) endpoint that accepts POST /track JSON events (the repo includes a sample service in `newsletter-analytics-service/`).
+> Prefer setting `ANALYTICS_ENDPOINT` to an HTTP(S) endpoint that accepts `POST` `/track` JSON events (the repo includes a sample service in `newsletter-analytics-service/`).
 >
 > If you still rely on spreadsheet-based analytics, `ANALYTICS_SPREADSHEET_ID` is still supported but deprecated — the codebase now prefers POSTing events to `ANALYTICS_ENDPOINT`.
+
+<br/>
 
 > [!CAUTION]
 > If you enable `ANALYTICS_LOG_USER=true`, the webapp will attempt to attach the server-side active user's email address to analytics events. This exposes personally-identifiable information (PII) to your analytics backend and may have legal/privacy implications depending on your jurisdiction and policy. Only enable if you have consent and a clear retention policy.
@@ -185,7 +170,8 @@ OilGas-Wire/
 │   ├── Dockerfile
 │   ├── package.json
 │   ├── index.js
-│   ├── newsletter_analytics.events.json
+│   ├── newsletter_analytics.*.json  # BigQuery schema files
+│   ├── newsletter_analytics.*.sql   # BigQuery create table queries
 │   └── README.md
 └── newsletter-scripts/  # The main Apps Script project
     ├── appsscript.json
