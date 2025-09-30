@@ -163,7 +163,6 @@ curl -X POST "<your analytics url>/track" \
 
 ```text
 OilGas-Wire/
-├── package.json
 ├── README.md
 ├── assets/
 ├── newsletter-analytics-service/  # The GCP service for analytics
@@ -175,6 +174,7 @@ OilGas-Wire/
 │   └── README.md
 └── newsletter-scripts/  # The main Apps Script project
     ├── appsscript.json
+    ├── package.json
     ├── AutoMailer.gs
     ├── Config.gs
     ├── Feed.gs
