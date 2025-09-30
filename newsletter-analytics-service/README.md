@@ -1,6 +1,6 @@
 # Newsletter Analytics Service
 
-This service collects and stores analytics events for newsletters, such as email opens and link clicks. It is designed to be used in conjunction with Google Apps Script-based newsletter systems.
+This service collects and stores analytics events for newsletters, such as email link clicks and web app activity. It is designed to be used in conjunction with the Google Apps Script-based newsletter system.
 
 ## Setup Instructions
 
@@ -70,16 +70,82 @@ This service collects and stores analytics events for newsletters, such as email
 
 ## API Endpoints
 
-### Shortlink support (multi-use, optionally expirable tokens)
+| Endpoints    | Method | Body / Params               | Description                                                        |
+| ------------ | ------ | --------------------------- | ------------------------------------------------------------------ |
+| `/track`     | `POST` | [Body](#track-endpoint)     | Log analytics events.                                              |
+| `/map`       | `POST` | [Body](#map-endpoint)       | Log `recipientHash` to `email` map (for looker studio ux).         |
+| `/shortlink` | `POST` | [Body](#shortlink-endpoint) | Create a shortlink token that maps to a target URL.                |
+| `/s/:token`  | `GET`  | [Params](#stoken-endpoint)  | Resolve a shortlink token to log click and redirect to stored URL. |
+
+---
+
+### `/track` endpoint
+
+A simple endpoint to log the analytics
+
+**Method**: `POST`
+
+**Body**:
+
+```json
+{
+    eventTimestamp: string;
+    src: string;
+    eventType: string;
+    eventDetail: string;
+    newsletterId: string;
+    recipientHash: string;
+    url: string;
+    durationSec: number;
+    userAgent: string | null;
+}
+```
+
+---
+
+### `/map` endpoint
+
+**Method**: `POST`
+
+**Body**:
+
+```json
+{
+    mappedAt: string;
+    recipientHash: string;
+    email: string;
+    emailHash: string;
+    newsletterId: string;
+}
+```
+
+---
+
+### `/shortlink` endpoint
 
 This service provides a shortlink API to create tokens that map to a final target URL. The shortlink lets the analytics service receive and record a click before redirecting to the destination — useful when third-party redirectors strip query parameters.
 
-- POST /shortlink: create a token. Request body: `{ url, nid, rid, ttlSeconds? }`. The `ttlSeconds` field is optional; if omitted the token is persistent (non-expiring). The service returns `{ ok: true, token, path, expiresAt }` where `expiresAt` will be `null` for non-expiring tokens.
-- GET /s/:token: resolve a token, log a `shortlink_click` event, and issue an HTTP 302 redirect to the stored URL. Tokens are multi-use by default; if a TTL was supplied when creating the token it will expire after that time.
+**Method**: `POST`
 
-Notes:
+**Body** for creating a shortlink token:
 
-- The current implementation supports two storage backends:
-  - In-memory Map (default): simple and suited for local testing or single-instance deployments. Non-expiring tokens stored here are lost on process restart.
-  - Redis (recommended for production): when `REDIS_URL` is provided, tokens are stored in Redis and shared across instances. Redis-backed tokens persist until explicitly expired by TTL (if set) or deleted.
-- By default the Apps Script client does not request a TTL so tokens are persistent and multi-use. If you need single-use tokens or short-lived tokens, set `ttlSeconds` in the `POST /shortlink` request when creating the token.
+```json
+{
+    url: string;
+    nid: string;
+    rid: string;
+    ttlSeconds?: number | null;
+}
+```
+
+### `/s/:token` endpoint
+
+Resolve a token, log a `mail_headline_click` event (since shortlinks are only used in mail)
+
+Issues an `HTTP 302` redirect to the stored URL.
+
+**Method**: `GET`
+
+**Parameters**:
+
+- `token`: The shortlink token to resolve.

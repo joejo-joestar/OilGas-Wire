@@ -1,22 +1,32 @@
 [
     {
         "name": "mappedAt",
-        "type": "TIMESTAMP"
+        "type": "TIMESTAMP",
+        "mode": "NULLABLE",
+        "description": "Timestamp indicating when the email address was mapped to the newsletter."
     },
     {
         "name": "recipientHash",
-        "type": "STRING"
+        "type": "STRING",
+        "mode": "NULLABLE",
+        "description": "Hashed value representing the recipient."
     },
     {
         "name": "email",
-        "type": "STRING"
+        "type": "STRING",
+        "mode": "NULLABLE",
+        "description": "The recipient's email address."
     },
     {
         "name": "emailHash",
-        "type": "STRING"
+        "type": "STRING",
+        "mode": "NULLABLE",
+        "description": "Hashed value of the recipient's email address."
     },
     {
         "name": "newsletterId",
-        "type": "STRING"
+        "type": "STRING",
+        "mode": "NULLABLE",
+        "description": "Unique identifier for a specific newsletter."
     }
 ]
