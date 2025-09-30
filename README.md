@@ -165,7 +165,7 @@ curl -X POST "<your analytics url>/track" \
 OilGas-Wire/
 ├── README.md
 ├── assets/
-├── newsletter-analytics-service/  # The GCP service for analytics
+├── newsletter-analytics-service/   # The GCP service for analytics
 │   ├── Dockerfile
 │   ├── package.json
 │   ├── index.js
