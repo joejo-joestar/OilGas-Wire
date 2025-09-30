@@ -67,7 +67,7 @@ This project includes lightweight analytics for clicks, page views and active ti
 - `WebAnalytics.gs` exposes a `doPost(e)` JSON API that accepts `logEvent` and `logActiveTime` actions and forwards them to `logEventApi` / `logActiveTimeApi`.
 - `SharedAnalytics.gs` provides `sendAnalyticsEvent()` which POSTs a normalized JSON payload to `ANALYTICS_ENDPOINT` when configured. This is the recommended way to collect analytics. If `ANALYTICS_ENDPOINT` is not set the function logs an error and is a no-op.
 
-More details on the backend service can be found in [`newsletter-analytics-service`](newsletter-analytics-service/README.md).
+More details on the backend service can be found in [`newsletter-analytics-service/`](newsletter-analytics-service/).
 
 > [!WARNING]
 > The mail analytics and sheet analytics are not fully implemented due to limitations with email clients and GAS. The mail analytics code is present in `MailAnalytics.gs` but do not work reliably.
@@ -83,17 +83,6 @@ More details on the backend service can be found in [`newsletter-analytics-servi
 
 > [!CAUTION]
 > If you enable `ANALYTICS_LOG_USER=true`, the webapp will attempt to attach the server-side active user's email address to analytics events. This exposes personally-identifiable information (PII) to your analytics backend and may have legal/privacy implications depending on your jurisdiction and policy. Only enable if you have consent and a clear retention policy.
-
-<br/>
-
-> [!TIP]
-> Example curl for posting to the analytics endpoint included with this repo (replace with your deployed URL):
-
-```bash
-curl -X POST "<your analytics url>/track" \
-  -H "Content-Type: application/json" \
-  -d '{"src":"source","eventType":"test","eventDetail":"test-details","durationSec":"25","newsletterId":"someID","url":"example.com","recipientHash":"hashed-id","ua":"user-agent-string"}'
-```
 
 ---
 
@@ -117,7 +106,7 @@ curl -X POST "<your analytics url>/track" \
 
     ```bash
     git clone https://github.com/joejo-joestar/OilGas-Wire.git
-    cd OilGas-Wire
+    cd OilGas-Wire/newsletter-scripts
     ```
 
 2. Run these commands:
