@@ -1,26 +1,32 @@
 [
     {
         "name": "token",
-        "type": "STRING"
+        "type": "STRING",
+        "description": "A unique token representing the shortlink"
     },
     {
         "name": "url",
-        "type": "STRING"
+        "type": "STRING",
+        "description": "The URL of the feed article that the shortlink points to"
     },
     {
         "name": "nid",
-        "type": "STRING"
+        "type": "STRING",
+        "description": "Newsletter ID"
     },
     {
         "name": "rid",
-        "type": "STRING"
+        "type": "STRING",
+        "description": "Recipient ID"
     },
     {
         "name": "createdAt",
-        "type": "TIMESTAMP"
+        "type": "TIMESTAMP",
+        "description": "Timestamp when the shortlink was created"
     },
     {
         "name": "expiresAt",
-        "type": "TIMESTAMP"
+        "type": "TIMESTAMP",
+        "description": "Timestamp when the shortlink will expire"
     }
 ]
