@@ -1,3 +1,6 @@
+> [!WARNING]
+> This repo is archived and is no longer maintained!
+
 <h1 align="center">🛢️ OilGas-Wire</h1>
 
 <p align="center">
